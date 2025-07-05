@@ -24,6 +24,7 @@ public class NewsDocument {
     private String description;
     private String link;
     private String imageUrl;
+    private String sourceName;
     private List<String> keywords;
     private List<String> category;
 
@@ -34,6 +35,7 @@ public class NewsDocument {
                 .description(dto.getDescription())
                 .link(dto.getLink())
                 .imageUrl(dto.getImageUrl())
+                .sourceName(dto.getSourceName())
                 .keywords(dto.getKeywords())
                 .category(dto.getCategory())
                 .build();
