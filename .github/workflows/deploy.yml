@@ -50,8 +50,10 @@ jobs:
           username: ${{ secrets.GCP_USER }}
           key: ${{ secrets.GCP_SSH_KEY }}
           script: |
-            echo "[1] Kill existing java process if any"
+            echo "[1] Kill existing java process and tmux session if any"
             pkill -f 'java -jar' || true
+            tmux kill-server || true
+            sleep 2
 
             echo "[2] Change to build/libs directory"
             cd /home/${{ secrets.GCP_USER }}/build/libs
