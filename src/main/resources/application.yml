@@ -24,6 +24,10 @@ spring:
     mongodb:
       uri: mongodb://sizzuser:SizzMongodb1234!@34.47.88.241:27017/sizz_dev?authSource=admin
 
+    redis:
+      host: 34.47.88.241
+      port: 6379
+
 gemini:
   api-key: AIzaSyD6GJKf-dKfANyvMgSejPdrg0LOouXX0jU
   url: https://generativelanguage.googleapis.com
