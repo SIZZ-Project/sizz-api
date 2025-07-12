@@ -34,13 +34,13 @@ jobs:
           script: |
             mkdir -p /home/${{ secrets.GCP_USER }}/build/libs
 
-      - name: Copy jar to GCP instance via SCP
+      - name: Copy executable jar to GCP instance via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.GCP_HOST }}
           username: ${{ secrets.GCP_USER }}
           key: ${{ secrets.GCP_SSH_KEY }}
-          source: build/libs/*.jar
+          source: build/libs/*SNAPSHOT.jar
           target: /home/${{ secrets.GCP_USER }}/build/libs
 
       - name: SSH to GCP and restart app
@@ -56,8 +56,8 @@ jobs:
             echo "[2] Change to build/libs directory"
             cd /home/${{ secrets.GCP_USER }}/build/libs
 
-            echo "[3] Select the latest jar file"
-            JAR_FILE=$(ls -t *.jar | head -n1)
+            echo "[3] Select the executable jar (exclude -plain.jar)"
+            JAR_FILE=$(ls -t *SNAPSHOT.jar | grep -v 'plain' | head -n1)
 
             echo "[4] Run in tmux session"
             tmux new-session -d "java -jar $JAR_FILE > ~/app.log 2> ~/app.err"
