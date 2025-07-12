@@ -61,7 +61,7 @@ jobs:
             JAR_FILE=$(ls -t *SNAPSHOT.jar | grep -v 'plain' | head -n1)
 
             echo "[4] Run with nohup in background"
-            nohup java -jar $JAR_FILE > ~/app.log 2> ~/app.err < /dev/null &
+            setsid nohup java -jar $JAR_FILE > ~/app.log 2> ~/app.err < /dev/null & disown
 
             echo "[5] Check if Java process is running"
             ps -ef | grep java || echo "No Java process found."
