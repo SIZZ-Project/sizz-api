@@ -1,8 +1,6 @@
-# src/test/resources/application-test.yml
-
 newsdata:
-  apiKey: test-key
-  url: https://newsdata.io/api/1
+  apiKey: test-newsdata-key
+  url: https://test-newsdata-url.com
   timeframe: 1h
   interval-ms: 10000
 
@@ -17,8 +15,20 @@ spring:
     hibernate:
       ddl-auto: create-drop
     show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+    database-platform: org.hibernate.dialect.H2Dialect
+
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/test
+
+    redis:
+      host: localhost
+      port: 6379
 
 gemini:
   apiKey: test-gemini-key
-  url: https://test-url
+  url: https://test-gemini-url.com
   maxOutputTokens: 100
