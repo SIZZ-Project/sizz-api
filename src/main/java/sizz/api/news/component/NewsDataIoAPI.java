@@ -12,7 +12,7 @@ public class NewsDataIoAPI {
 
     private final WebClient newsDataIoWebClient;
 
-    @Value("${newsdata.api-key}")
+    @Value("${newsdata.apiKey}")
     private String apiKey;
 
     @Value("${newsdata.timeframe}")
