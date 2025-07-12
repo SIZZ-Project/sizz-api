@@ -6,6 +6,7 @@ import lombok.*;
 import org.springframework.data.mongodb.core.mapping.Document;
 import sizz.api.news.dto.NewsDto;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Document(collection = "news")
@@ -24,9 +25,12 @@ public class NewsDocument {
     private String description;
     private String link;
     private String imageUrl;
+    private String sourceId;
     private String sourceName;
     private List<String> keywords;
     private List<String> category;
+    private LocalDateTime pubDate;
+    private Long viewCount;
 
     public static NewsDocument fromDto(NewsDto dto) {
         return NewsDocument.builder()
@@ -35,9 +39,12 @@ public class NewsDocument {
                 .description(dto.getDescription())
                 .link(dto.getLink())
                 .imageUrl(dto.getImageUrl())
+                .sourceId(dto.getSourceId())
                 .sourceName(dto.getSourceName())
                 .keywords(dto.getKeywords())
                 .category(dto.getCategory())
+                .pubDate(dto.getPubDate())
+                .viewCount(dto.getViewCount())
                 .build();
     }
 
