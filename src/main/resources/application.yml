@@ -1,5 +1,5 @@
 newsdata:
-  'api-key': pub_4e4f512ab7934ca280a36970226a88d4
+  apiKey: pub_4e4f512ab7934ca280a36970226a88d4
   url: https://newsdata.io/api/1
   timeframe: 3h
   interval-ms: 10800000
@@ -29,6 +29,6 @@ spring:
       port: 6379
 
 gemini:
-  api-key: AIzaSyD6GJKf-dKfANyvMgSejPdrg0LOouXX0jU
+  apiKey: AIzaSyD6GJKf-dKfANyvMgSejPdrg0LOouXX0jU
   url: https://generativelanguage.googleapis.com
   maxOutputTokens: 500

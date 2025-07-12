@@ -15,7 +15,7 @@ public class GeminiAPI {
 
     private final WebClient geminiWebClient;
 
-    @Value("${gemini.api-key}")
+    @Value("${gemini.apiKey}")
     private String apiKey;
 
     @Value("${gemini.maxOutputTokens}")
