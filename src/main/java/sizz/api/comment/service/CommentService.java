@@ -1,13 +1,13 @@
-package sizz.api.Comment.service;
+package sizz.api.comment.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import sizz.api.Comment.dto.CommentRequest;
-import sizz.api.Comment.dto.CommentResponse;
-import sizz.api.Comment.entity.CommentEntity;
-import sizz.api.Comment.repository.CommentRepository;
+import sizz.api.comment.dto.CommentRequest;
+import sizz.api.comment.dto.CommentResponse;
+import sizz.api.comment.entity.CommentEntity;
+import sizz.api.comment.repository.CommentRepository;
 
-import java.time.LocalDateTime;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -19,24 +19,26 @@ public class CommentService {
 
     public CommentResponse addComment(Long articleId, CommentRequest request) {
         CommentEntity comment = CommentEntity.builder()
-                .articleId(articleId)
+                .articleId(request.getArticleId())
                 .writer(request.getWriter())
                 .content(request.getContent())
-                .createdAt(LocalDateTime.now())
                 .build();
 
         CommentEntity saved = commentRepository.save(comment);
-        return new CommentResponse(saved.getId(), saved.getWriter(), saved.getContent(), saved.getCreatedAt());
+        return CommentResponse.fromEntity(saved);
     }
 
     public List<CommentResponse> getComments(Long articleId) {
         return commentRepository.findByArticleIdOrderByCreatedAtAsc(articleId)
                 .stream()
-                .map(c -> new CommentResponse(c.getId(), c.getWriter(), c.getContent(), c.getCreatedAt()))
+                .map(CommentResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
     public void deleteComment(Long commentId) {
+        if (!commentRepository.existsById(commentId)) {
+            throw new IllegalArgumentException("댓글이 존재하지 않습니다.");
+        }
         commentRepository.deleteById(commentId);
     }
 }
