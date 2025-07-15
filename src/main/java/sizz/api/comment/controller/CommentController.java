@@ -1,11 +1,12 @@
-package sizz.api.Comment.controller;
+package sizz.api.comment.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import sizz.api.Comment.dto.CommentRequest;
-import sizz.api.Comment.dto.CommentResponse;
-import sizz.api.Comment.service.CommentService;
+import sizz.api.comment.dto.CommentRequest;
+import sizz.api.comment.dto.CommentResponse;
+import sizz.api.comment.service.CommentService;
+
 
 import java.util.List;
 
@@ -21,12 +22,14 @@ public class CommentController {
             @PathVariable Long newsId,
             @RequestBody CommentRequest request
     ) {
-        return ResponseEntity.ok(commentService.addComment(newsId, request));
+        CommentResponse response = commentService.addComment(newsId, request);
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
     public ResponseEntity<List<CommentResponse>> getComments(@PathVariable Long newsId) {
-        return ResponseEntity.ok(commentService.getComments(newsId));
+        List<CommentResponse> comments = commentService.getComments(newsId);
+        return ResponseEntity.ok(comments);
     }
 
     @DeleteMapping("/{commentId}")
