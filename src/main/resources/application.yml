@@ -32,3 +32,6 @@ gemini:
   apiKey: AIzaSyD6GJKf-dKfANyvMgSejPdrg0LOouXX0jU
   url: https://generativelanguage.googleapis.com
   maxOutputTokens: 500
+
+schedule:
+  viewSyncMs: 3600000
