@@ -28,7 +28,9 @@ jobs:
       - name: Rename jar to match systemd target
         run: |
           JAR=$(ls build/libs/*SNAPSHOT.jar | head -n 1)
-          cp "$JAR" build/libs/sizz-api-0.0.1-SNAPSHOT.jar
+          if [ "$JAR" != "build/libs/sizz-api-0.0.1-SNAPSHOT.jar" ]; then
+            cp "$JAR" build/libs/sizz-api-0.0.1-SNAPSHOT.jar
+          fi
 
       - name: Create target directory on GCP
         uses: appleboy/ssh-action@v1.0.3
