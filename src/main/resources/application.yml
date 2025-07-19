@@ -11,6 +11,23 @@ spring:
     password: SizzMysql1234!
     driver-class-name: com.mysql.cj.jdbc.Driver
 
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+            scope:
+              - profile
+              - email
+        provider:
+          google:
+            authorization-uri: https://accounts.google.com/o/oauth2/v2/auth
+            token-uri: https://oauth2.googleapis.com/token
+            user-info-uri: https://www.googleapis.com/oauth2/v3/userinfo
+
   jpa:
     hibernate:
       ddl-auto: update
@@ -27,6 +44,9 @@ spring:
     redis:
       host: 34.47.88.241
       port: 6379
+
+jwt:
+  secret: YmFzZTY0ZW5jb2RlZHNlY3JldGtleXNob3VsZGJlMzI1Ynl0ZXM=
 
 gemini:
   apiKey: AIzaSyD6GJKf-dKfANyvMgSejPdrg0LOouXX0jU

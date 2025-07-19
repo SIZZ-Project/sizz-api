@@ -3,7 +3,11 @@ package sizz.api.users.service;
 import sizz.api.users.dto.SignupRequest;
 import sizz.api.users.entity.User;
 import sizz.api.users.repository.UserRepository;
+import sizz.api.users.security.JwtTokenProvider;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,10 +16,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserService {
     
     @Autowired
-    private UserRepository userRepository;
-    
+    private final UserRepository userRepository;
+    private final JwtTokenProvider jwtTokenProvider;
+    private final PasswordEncoder passwordEncoder;
+
     @Autowired
-    private PasswordEncoder passwordEncoder;
+    public UserService(UserRepository userRepository, JwtTokenProvider jwtTokenProvider, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.passwordEncoder = passwordEncoder;
+    }
     
     @Transactional
     public User createUser(SignupRequest signupRequest) {
@@ -37,6 +47,17 @@ public class UserService {
         
         return userRepository.save(user);
     }
+
+    public String login(String email, String password) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new BadCredentialsException("비밀번호가 틀렸습니다.");
+        }
+
+        return jwtTokenProvider.createToken(user.getEmail());
+    }
     
     @Transactional
     public User processOAuthPostLogin(String email, String name, User.AuthProvider provider, String providerId) {
@@ -51,6 +72,10 @@ public class UserService {
             User newUser = new User(email, name, provider, providerId);
             return userRepository.save(newUser);
         }
+    }
+
+    public User findByEmail(String email) {
+        return userRepository.findByEmail(email).orElse(null);
     }
     
     public boolean existsByEmail(String email) {

@@ -83,4 +83,8 @@ public class User {
   public enum AuthProvider {
       LOCAL, GOOGLE
   }
+
+  public Object getRoles() {
+    return null; // TODO
+  }
 }

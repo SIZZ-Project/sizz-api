@@ -1,4 +1,5 @@
 package sizz.api.users.dto;
+
 public class ApiResponse {
     private boolean success;
     private String message;
