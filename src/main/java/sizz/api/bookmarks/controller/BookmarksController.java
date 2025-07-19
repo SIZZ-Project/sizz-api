@@ -11,29 +11,39 @@ import sizz.api.bookmarks.service.BookmarksService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/bookmarks")
+@RequestMapping("/api/news")
 @RequiredArgsConstructor
 public class BookmarksController {
     private final BookmarksService bookmarkService;
 
-
-    @PostMapping
-    public ResponseEntity<BookmarksResponse> addBookmark(@RequestBody @Valid BookmarksRequest request) {
-        BookmarksResponse response = bookmarkService.addBookmark(request);
+    //토클
+    @PatchMapping("/news/{articleId}/bookmark")
+    public ResponseEntity<BookmarksResponse> toggleBookmark(
+            @PathVariable Long articleId,
+            @RequestBody BookmarksRequest request
+    ) {
+        BookmarksResponse response = bookmarkService.toggleBookmark(request.getUserId(), articleId, request.isBookmarked());
         return ResponseEntity.ok(response);
     }
 
-
-    @GetMapping
-    public ResponseEntity<List<BookmarksResponse>> getBookmarksByUser(@RequestParam Long userId) {
-        List<BookmarksResponse> bookmarks = bookmarkService.getBookmarksByUser(userId);
+    //뉴스 전체 조회
+    @GetMapping("/users/{userId}/bookmarks")
+    public ResponseEntity<List<BookmarksResponse>> getBookmarks(
+            @PathVariable Long userId
+    ) {
+        List<BookmarksResponse> bookmarks = bookmarkService.getBookmarks(userId);
         return ResponseEntity.ok(bookmarks);
     }
 
-
-    @DeleteMapping("/{bookmarkId}")
-    public ResponseEntity<Void> deleteBookmark(@PathVariable Long bookmarkId) {
-        bookmarkService.deleteBookmark(bookmarkId);
-        return ResponseEntity.noContent().build();
+    //북마크 여부 확인
+    @GetMapping("/news/{articleId}/bookmark")
+    public ResponseEntity<Boolean> isBookmarked(
+            @PathVariable Long articleId,
+            @RequestParam Long userId
+    ) {
+        boolean bookmarked = bookmarkService.isBookmarked(userId, articleId);
+        return ResponseEntity.ok(bookmarked);
     }
+
+
 }

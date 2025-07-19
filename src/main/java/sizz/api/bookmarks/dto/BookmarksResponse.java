@@ -1,24 +1,28 @@
 package sizz.api.bookmarks.dto;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import sizz.api.bookmarks.entity.BookmarksEntity;
 
-import java.time.LocalDateTime;
-
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 public class BookmarksResponse {
     private Long id;
     private Long userId;
     private Long articleId;
-    private LocalDateTime createdAt;
+    private Boolean bookmarked;
 
-    public static BookmarksResponse fromEntity(sizz.api.bookmarks.entity.BookmarksEntity bookmark) {
+    // Entity -> DTO 변환 메서드
+    public static BookmarksResponse fromEntity(BookmarksEntity entity) {
         return new BookmarksResponse(
-                bookmark.getId(),
-                bookmark.getUserId(),
-                bookmark.getArticleId(),
-                bookmark.getCreatedAt()
+                entity.getId(),
+                entity.getUserId(),
+                entity.getArticleId(),
+                entity.isBookmarked()
         );
     }
 }

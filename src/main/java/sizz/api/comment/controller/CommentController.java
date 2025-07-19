@@ -11,30 +11,40 @@ import sizz.api.comment.service.CommentService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/news/{newsId}/comments")
+@RequestMapping("/api/news")
 @RequiredArgsConstructor
 public class CommentController {
 
     private final CommentService commentService;
 
-    @PostMapping
+    @PostMapping("/{articleId}/comments")
     public ResponseEntity<CommentResponse> addComment(
-            @PathVariable Long newsId,
+            @PathVariable Long articleId,
             @RequestBody CommentRequest request
     ) {
-        CommentResponse response = commentService.addComment(newsId, request);
+        CommentResponse response = commentService.addComment(articleId, request);
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping
-    public ResponseEntity<List<CommentResponse>> getComments(@PathVariable Long newsId) {
-        List<CommentResponse> comments = commentService.getComments(newsId);
+    @GetMapping("/{articleId}/comments")
+    public ResponseEntity<List<CommentResponse>> getComments(@PathVariable Long articleId) {
+        List<CommentResponse> comments = commentService.getComments(articleId);
         return ResponseEntity.ok(comments);
     }
 
-    @DeleteMapping("/{commentId}")
-    public ResponseEntity<Void> deleteComment(@PathVariable Long commentId) {
-        commentService.deleteComment(commentId);
+    @PatchMapping("/{articleId}/comments/{commentId}")
+    public ResponseEntity<CommentResponse> patchComment(
+            @PathVariable("articleId") Long articleId,
+            @PathVariable("commentId") Long commentId,
+            @RequestBody CommentRequest request
+    ) {
+        CommentResponse updated = commentService.patchComment(articleId, commentId, request);
+        return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/{articleId}/comments/{commentsId}")
+    public ResponseEntity<Void> deleteComment(@PathVariable Long commentsId) {
+        commentService.deleteComment(commentsId);
         return ResponseEntity.noContent().build();
     }
 }

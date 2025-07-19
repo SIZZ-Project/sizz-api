@@ -22,7 +22,7 @@ public class CommentEntity {
 
     private Long articleId;
 
-    private String writer;
+    private String userId;
 
     private String content;
 

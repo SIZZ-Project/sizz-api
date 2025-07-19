@@ -29,6 +29,6 @@ public class BookmarksEntity {
     @Column(name = "article_id", nullable = false)
     private Long articleId;
 
-    @CreatedDate
-    private LocalDateTime createdAt;
+    @Column(name = "bookmarked", nullable = false)
+    private boolean bookmarked;
 }

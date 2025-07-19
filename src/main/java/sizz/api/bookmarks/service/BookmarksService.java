@@ -9,6 +9,7 @@ import sizz.api.bookmarks.entity.BookmarksEntity;
 import sizz.api.bookmarks.repository.BookmarksRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,36 +20,39 @@ public class BookmarksService {
     private final BookmarksRepository bookmarksRepository;
 
 
-    public BookmarksResponse addBookmark(BookmarksRequest request) {
-        //중복 방지
-        boolean exists = bookmarksRepository.existsByUserIdAndArticleId(request.getUserId(), request.getArticleId());
-        if (exists) {
-            throw new IllegalArgumentException("이미 북마크한 게시글입니다.");
+    public BookmarksResponse toggleBookmark(Long userId, Long articleId, boolean bookmarked) {
+        Optional<BookmarksEntity> optional = bookmarksRepository.findByUserIdAndArticleId(userId, articleId);
+
+        BookmarksEntity entity;
+        if (optional.isPresent()) {
+            entity = optional.get();
+            entity.setBookmarked(bookmarked);
+        } else {
+            entity = BookmarksEntity.builder()
+                    .userId(userId)
+                    .articleId(articleId)
+                    .bookmarked(bookmarked)
+                    .build();
         }
 
-        BookmarksEntity bookmark = BookmarksEntity.builder()
-                .userId(request.getUserId())
-                .articleId(request.getArticleId())
-                .build();
-
-        BookmarksEntity saved = bookmarksRepository.save(bookmark);
+        BookmarksEntity saved = bookmarksRepository.save(entity);
         return BookmarksResponse.fromEntity(saved);
     }
 
-    // 유저별 북마크 목록 조회
-    @Transactional(readOnly = true)
-    public List<BookmarksResponse> getBookmarksByUser(Long userId) {
-        List<BookmarksEntity> bookmarks = bookmarksRepository.findByUserIdOrderByCreatedAtDesc(userId);
-        return bookmarks.stream()
+    // 유저가 북마크한 목록 (bookmarked = true 인 것만 반환)
+    public List<BookmarksResponse> getBookmarks(Long userId) {
+        List<BookmarksEntity> entities = bookmarksRepository.findByUserId(userId);
+
+        return entities.stream()
+                .filter(BookmarksEntity::isBookmarked) // 활성화된 북마크만 필터링
                 .map(BookmarksResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
-
-    public void deleteBookmark(Long bookmarkId) {
-        if (!bookmarksRepository.existsById(bookmarkId)) {
-            throw new IllegalArgumentException("북마크가 존재하지 않습니다.");
-        }
-        bookmarksRepository.deleteById(bookmarkId);
+    // 특정 뉴스가 유저에 의해 북마크 되었는지 확인
+    public boolean isBookmarked(Long userId, Long articleId) {
+        return bookmarksRepository.findByUserIdAndArticleId(userId, articleId)
+                .map(BookmarksEntity::isBookmarked)
+                .orElse(false);
     }
 }
