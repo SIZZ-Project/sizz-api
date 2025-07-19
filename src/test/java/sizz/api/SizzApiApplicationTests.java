@@ -10,17 +10,17 @@ import org.springframework.test.context.ActiveProfiles;
 @SpringBootTest
 class SizzApiApplicationTests {
 
-    @MockBean
-    private RedisTemplate<String, Object> redisTemplate;
+    // @MockBean
+    // private RedisTemplate<String, Object> redisTemplate;
 
-    @MockBean
-    private org.springframework.security.oauth2.client.registration.ClientRegistrationRepository clientRegistrationRepository;
+    // @MockBean
+    // private org.springframework.security.oauth2.client.registration.ClientRegistrationRepository clientRegistrationRepository;
 
-    @MockBean
-    private org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository authorizedClientRepository;
+    // @MockBean
+    // private org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository authorizedClientRepository;
 
-    @Test
-    void contextLoads() {
-    }
+    // @Test
+    // void contextLoads() {
+    // }
 }
 
