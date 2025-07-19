@@ -49,6 +49,7 @@ jobs:
           key: ${{ secrets.GCP_SSH_KEY }}
           source: build/libs/sizz-api-0.0.1-SNAPSHOT.jar
           target: /home/${{ secrets.GCP_USER }}/build/libs
+          strip_components: 2
 
       - name: Restart Spring Boot service on GCP
         uses: appleboy/ssh-action@v1.0.3
