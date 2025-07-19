@@ -3,7 +3,6 @@ package sizz.api.bookmarks.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import sizz.api.bookmarks.dto.BookmarksRequest;
 import sizz.api.bookmarks.dto.BookmarksResponse;
 import sizz.api.bookmarks.entity.BookmarksEntity;
 import sizz.api.bookmarks.repository.BookmarksRepository;
