@@ -30,7 +30,10 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/**").permitAll() //TODO: 운영 배포 전 인증 정책 적용
+                .requestMatchers("/api/**","/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/swagger/v1",
+                        "/v3/api-docs/**").permitAll() //TODO: 운영 배포 전 인증 정책 적용
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth2 -> oauth2
