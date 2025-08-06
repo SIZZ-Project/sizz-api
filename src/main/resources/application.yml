@@ -1,3 +1,7 @@
+logging:
+  level:
+    org.springframework.security: DEBUG
+
 server:
   port: 8080
   address: 0.0.0.0
@@ -17,6 +21,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   security:
+    debug: true
     oauth2:
       client:
         registration:
