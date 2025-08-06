@@ -1,6 +1,7 @@
 logging:
   level:
     org.springframework.security: DEBUG
+    org.springframework.security.web.FilterChainProxy: DEBUG
 
 server:
   port: 8080
