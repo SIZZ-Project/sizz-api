@@ -1,6 +1,7 @@
 server:
   port: 8080
   address: 0.0.0.0
+  forward-headers-strategy: framework
 
 newsdata:
   apiKey: pub_4e4f512ab7934ca280a36970226a88d4
