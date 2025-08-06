@@ -43,7 +43,8 @@ public class SecurityConfig {
                         sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
-                        .anyRequest().permitAll()
+                        .requestMatchers("/api/**").permitAll()
+                        .anyRequest().denyAll()
                 );
         return http.build();
     }
@@ -56,7 +57,6 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/api/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/swagger/v1",
