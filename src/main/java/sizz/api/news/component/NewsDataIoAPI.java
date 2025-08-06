@@ -15,9 +15,6 @@ public class NewsDataIoAPI {
     @Value("${newsdata.apiKey}")
     private String apiKey;
 
-    @Value("${newsdata.timeframe}")
-    private String timeframe;
-
     public NewsApiResponse fetchNews(String keyword) {
         return newsDataIoWebClient.get()
                 .uri(uriBuilder -> uriBuilder
@@ -25,7 +22,6 @@ public class NewsDataIoAPI {
                         .queryParam("apikey", apiKey)
                         .queryParam("q", keyword)
                         .queryParam("language", "ko")
-                        .queryParam("timeframe", timeframe)
                         .build())
                 .retrieve()
                 .bodyToMono(NewsApiResponse.class)
