@@ -50,11 +50,15 @@ spring:
 
   data:
     mongodb:
-      uri: mongodb://sizzuser:SizzMongodb0518!@sizzapi-staging.duckdns.org:27017/sizz?authSource=sizz
+      host: sizzapi-staging.duckdns.org
+      port: 27017
+      database: sizz
+      username: sizzuser
+      password: SizzMongodb0518!
+      authentication-database: sizz
 
     redis:
-      host: sizzapi-staging.duckdns.org
-      port: 6379
+      url: redis://sizzapi-staging.duckdns.org:6379
 
 jwt:
   secret: YmFzZTY0ZW5jb2RlZHNlY3JldGtleXNob3VsZGJlMzI1Ynl0ZXM=
