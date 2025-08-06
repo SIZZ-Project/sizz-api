@@ -46,6 +46,7 @@ public class SecurityConfig {
     }
 
     @Bean
+    @Order(2)
     public SecurityFilterChain oauth2FilterChain(HttpSecurity http) throws Exception {
         http
                 .cors(withDefaults())
