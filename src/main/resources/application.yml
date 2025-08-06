@@ -58,7 +58,8 @@ spring:
       authentication-database: sizz
 
     redis:
-      url: redis://sizzapi-staging.duckdns.org:6379
+      host: sizzapi-staging.duckdns.org:6379
+      port: 6379
 
 jwt:
   secret: YmFzZTY0ZW5jb2RlZHNlY3JldGtleXNob3VsZGJlMzI1Ynl0ZXM=
