@@ -37,7 +37,6 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
         userService.processOAuthPostLogin(email, name, User.AuthProvider.GOOGLE, providerId);
 
-        // TODO redirect path 설정
-        // response.sendRedirect("");
+        response.sendRedirect("https://sizzapi-staging.duckdns.org/");
     }
 }
