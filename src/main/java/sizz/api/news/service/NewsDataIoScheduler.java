@@ -20,23 +20,33 @@ public class NewsDataIoScheduler {
     private final NewsSyncService newsSyncService;
     private final GeminiAPI geminiAPI;
 
-    @Scheduled(fixedRateString = "${newsdata.interval-ms}")
+    @Scheduled(fixedRateString = "${newsdata.interval-ms}", initialDelay = 10_000)
     public void fetchNews(){
 
         try{
             NewsApiResponse response = newsDataIoAPI.fetchNews("정치");
 
-            List<NewsDto> articles = response.getResults();
+            List<NewsDto> articles = (response != null) ? response.getResults() : null;
 
-            for(NewsDto article:articles){
-                String description = article.getDescription();
-
-                String summary = geminiAPI.summarizeNews(description);
-
-                article.setDescription(summary);
+            if (articles == null || articles.isEmpty()) {
+                log.info("뉴스 수집 결과 없음");
+                return;
             }
 
-            newsSyncService.syncNews(articles);
+            for(NewsDto article:articles){
+                try {
+                    String description = article.getDescription();
+                    if (description != null && !description.isBlank()) {
+                        String summary = geminiAPI.summarizeNews(description);
+                        article.setDescription(summary);
+                    }
+                } catch (Exception ge) {
+                    log.warn("뉴스 요약 오류 articleId={} msg={}", article.getArticleId(), ge.getMessage());
+                }
+            }
+
+            int saved = newsSyncService.syncNews(articles);
+            log.info("[NEWS] fetch end - saved={}", saved);
 
         } catch (Exception e){
             log.error("뉴스 수집 오류: {}", e.getMessage(), e);

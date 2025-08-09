@@ -16,24 +16,32 @@ public class NewsSyncService {
 
     private final NewsRepository newsRepository;
 
-    public void syncNews(List<NewsDto> articles) {
+    public int syncNews(List<NewsDto> articles) {
+        int saved = 0;
 
         for(NewsDto article : articles) {
 
             try{
-                if(newsRepository.existsByArticleId(article.getArticleId())) {
+                String articleId = article.getArticleId();
+                if (articleId == null || articleId.isBlank()) {
+                    log.warn("articleId가 비어있어서 저장 스킵 (title='{}')", article.getTitle());
+                    continue;
+                }
+                if (newsRepository.existsByArticleId(articleId)) {
                     continue;
                 }
 
                 NewsDocument doc = NewsDocument.fromDto(article);
-
                 newsRepository.save(doc);
+                saved++;
 
             } catch(Exception e){
-                log.error("뉴스 저장 오류 article id {}", article.getArticleId(), e);
+                log.error("뉴스 저장 오류 articleId={} msg={}", article.getArticleId(), e.getMessage(), e);
             }
 
         }
+
+        return saved;
 
     }
 
