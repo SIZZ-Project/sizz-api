@@ -55,6 +55,7 @@ spring:
       username: sizzuser
       password: SizzMongodb0518!
       authentication-database: sizz
+      auto-index-creation: true
 
     redis:
       host: sizzapi-staging.duckdns.org
