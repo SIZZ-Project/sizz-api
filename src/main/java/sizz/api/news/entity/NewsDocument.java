@@ -49,6 +49,8 @@ public class NewsDocument {
     @Builder.Default
     private long viewCount = 0L;
 
+    private String inclination;
+
     public static NewsDocument fromDto(NewsDto dto) {
         return NewsDocument.builder()
                 .articleId(dto.getArticleId())
@@ -62,6 +64,7 @@ public class NewsDocument {
                 .category(Optional.ofNullable(dto.getCategory()).orElseGet(Collections::emptyList))
                 .pubDate(dto.getPubDate())
                 .viewCount(dto.getViewCount() == null ? 0L : dto.getViewCount())
+                .inclination(dto.getInclination())
                 .build();
     }
 }

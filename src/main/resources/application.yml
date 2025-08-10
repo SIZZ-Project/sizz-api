@@ -67,7 +67,10 @@ jwt:
 gemini:
   apiKey: AIzaSyD6GJKf-dKfANyvMgSejPdrg0LOouXX0jU
   url: https://generativelanguage.googleapis.com
-  maxOutputTokens: 500
+  maxOutputTokens:
+    summary: 500
+    inclination: 8
+
 
 schedule:
   viewSyncMs: 3600000

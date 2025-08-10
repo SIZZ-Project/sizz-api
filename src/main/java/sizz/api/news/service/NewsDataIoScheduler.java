@@ -38,7 +38,9 @@ public class NewsDataIoScheduler {
                     String description = article.getDescription();
                     if (description != null && !description.isBlank()) {
                         String summary = geminiAPI.summarizeNews(description);
+                        String inclination = geminiAPI.inclinationAnalysis(description);
                         article.setDescription(summary);
+                        article.setInclination(inclination);
                     }
                 } catch (Exception ge) {
                     log.warn("뉴스 요약 오류 articleId={} msg={}", article.getArticleId(), ge.getMessage());

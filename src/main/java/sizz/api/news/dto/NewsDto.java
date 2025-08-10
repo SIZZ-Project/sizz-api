@@ -30,4 +30,6 @@ public class NewsDto {
     private LocalDateTime pubDate;
 
     private Long viewCount;
+
+    private String inclination;
 }
