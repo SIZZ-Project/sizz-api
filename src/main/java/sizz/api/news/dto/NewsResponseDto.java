@@ -19,6 +19,7 @@ public class NewsResponseDto {
     private LocalDateTime pubDate;
     private String sourceName;
     private Long viewCount;
+    private String inclination;
 
     public static NewsResponseDto from(NewsDocument news) {
         return new NewsResponseDto(
@@ -29,7 +30,8 @@ public class NewsResponseDto {
                 news.getCategory(),
                 news.getPubDate(),
                 news.getSourceName(),
-                news.getViewCount()
+                news.getViewCount(),
+                news.getInclination()
         );
     }
 
