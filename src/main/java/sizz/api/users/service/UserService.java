@@ -14,8 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserService {
-    
-    @Autowired
+
     private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
     private final PasswordEncoder passwordEncoder;
