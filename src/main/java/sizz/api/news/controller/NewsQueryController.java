@@ -21,7 +21,7 @@ public class NewsQueryController {
     private final NewsQueryService newsQueryService;
 
     @GetMapping("/news/all")
-    public Page<NewsResponseDto> findAllNews(@PageableDefault(size = 10, sort = "pubDate", direction = Sort.Direction.DESC) Pageable pageable) {
+    public Page<NewsResponseDto> findAllNews(@PageableDefault(size = 10, sort = {"pubDate","id"}, direction = Sort.Direction.DESC) Pageable pageable) {
         return newsQueryService.findAllNews(pageable);
     }
 
