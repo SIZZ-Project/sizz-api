@@ -12,6 +12,6 @@ public interface NewsRepository extends MongoRepository<NewsDocument, String> {
 
     boolean existsByArticleId(String articleId);
     Page<NewsDocument> findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String title, String description, Pageable pageable);
-    List<NewsDocument> findTop5ByPubDateBetweenOrderByViewCountDescPubDateDesc(LocalDateTime start, LocalDateTime end);
+    List<NewsDocument> findTop5ByPubDateBetweenOrderByViewCountDescPubDateDescIdDesc(LocalDateTime start, LocalDateTime end);
 
 }

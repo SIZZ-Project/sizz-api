@@ -21,7 +21,7 @@ public class SearchController {
 
     @GetMapping("/news")
     public Page<SearchNewsResponseDto> searchNews(@RequestParam String query,
-                                                  @PageableDefault(size = 10, sort = "pubDate", direction = Sort.Direction.DESC) Pageable pageable) {
+                                                  @PageableDefault(size = 10, sort = {"pubDate","id"}, direction = Sort.Direction.DESC) Pageable pageable) {
         return searchService.searchNews(query, pageable);
     }
 

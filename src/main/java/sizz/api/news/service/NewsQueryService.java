@@ -40,7 +40,7 @@ public class NewsQueryService {
         LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
 
-        List<NewsDocument> hotNews = newsRepository.findTop5ByPubDateBetweenOrderByViewCountDescPubDateDesc(startOfDay, endOfDay);
+        List<NewsDocument> hotNews = newsRepository.findTop5ByPubDateBetweenOrderByViewCountDescPubDateDescIdDesc(startOfDay, endOfDay);
         List<NewsResponseDto> result = hotNews.stream()
                 .map(NewsResponseDto::from)
                 .collect(Collectors.toList());
