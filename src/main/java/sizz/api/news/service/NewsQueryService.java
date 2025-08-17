@@ -3,8 +3,11 @@ package sizz.api.news.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import sizz.api.news.dto.CursorPage;
 import sizz.api.news.dto.NewsResponseDto;
 import sizz.api.news.entity.NewsDocument;
 import sizz.api.news.repository.NewsRepository;
@@ -16,6 +19,8 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static sizz.api.news.service.CursorUtils.run;
+
 @Service
 @RequiredArgsConstructor
 public class NewsQueryService {
@@ -23,8 +28,9 @@ public class NewsQueryService {
     private final NewsRepository newsRepository;
     private final RedisTemplate<String, Object> redisTemplate;
     private static final String HOT_NEWS_CACHE_KEY = "hot:news";
+    private final MongoTemplate mongo;
 
-    public Page<NewsResponseDto> findAllNews(Pageable pageable) {
+    public Page<NewsResponseDto> findAllNewsPage(Pageable pageable) {
         return newsRepository.findAll(pageable)
                 .map(NewsResponseDto::from);
     }
@@ -47,6 +53,10 @@ public class NewsQueryService {
 
         redisTemplate.opsForValue().set(HOT_NEWS_CACHE_KEY, result, Duration.ofHours(5));
         return result;
+    }
+
+    public CursorPage<NewsResponseDto> findAllNewsCursor(Integer limit, String cursor) {
+        return run(mongo, new Criteria(), limit, cursor, NewsResponseDto::from);
     }
 
 }

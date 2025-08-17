@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import sizz.api.news.dto.CursorPage;
 import sizz.api.search.dto.SearchNewsResponseDto;
 import sizz.api.search.service.SearchService;
 
@@ -22,7 +23,16 @@ public class SearchController {
     @GetMapping("/news")
     public Page<SearchNewsResponseDto> searchNews(@RequestParam String query,
                                                   @PageableDefault(size = 10, sort = {"pubDate","id"}, direction = Sort.Direction.DESC) Pageable pageable) {
-        return searchService.searchNews(query, pageable);
+        return searchService.searchNewsPage(query, pageable);
+    }
+
+    @GetMapping("/news-cursor")
+    public CursorPage<SearchNewsResponseDto> searchNewsCursor(
+            @RequestParam(required = false) String query,
+            @RequestParam(defaultValue = "10") Integer limit,
+            @RequestParam(required = false) String cursor
+    ) {
+        return searchService.searchNewsCursor(query, limit, cursor);
     }
 
 
