@@ -17,7 +17,7 @@ import java.util.Optional;
 @Document(collection = "news")
 @CompoundIndexes({
         @CompoundIndex(name="pubDate__id_desc", def="{'pubDate': -1, '_id': -1}"),
-        @CompoundIndex(name = "pubDate_viewCount_desc", def = "{'pubDate': -1, 'viewCount': -1}")
+        @CompoundIndex(name="viewCount_pubDate__id_desc", def="{'viewCount': -1, 'pubDate': -1, '_id': -1}")
 })
 @Getter
 @Setter
