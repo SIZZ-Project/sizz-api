@@ -67,9 +67,10 @@ jwt:
 gemini:
   apiKey: AIzaSyD6GJKf-dKfANyvMgSejPdrg0LOouXX0jU
   url: https://generativelanguage.googleapis.com
+  model: gemini-2.5-flash
   maxOutputTokens:
     summary: 500
-    inclination: 8
+    inclination: 20
 
 
 schedule:
