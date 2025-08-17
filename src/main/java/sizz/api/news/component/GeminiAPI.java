@@ -1,6 +1,7 @@
 package sizz.api.news.component;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -12,12 +13,16 @@ import java.util.Optional;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class GeminiAPI {
 
     private final WebClient geminiWebClient;
 
     @Value("${gemini.apiKey}")
     private String apiKey;
+
+    @Value("${gemini.model}")
+    private String model;
 
     @Value("${gemini.maxOutputTokens.summary}")
     private int maxTokensSummary;
@@ -30,7 +35,7 @@ public class GeminiAPI {
 
         GeminiResponse response = geminiWebClient.post()
                 .uri(uriBuilder -> uriBuilder
-                        .path("/v1beta/models/gemini-1.5-flash:generateContent")
+                        .path("/v1beta/models/" + model + ":generateContent")
                         .queryParam("key", apiKey)
                         .build())
                 .bodyValue(geminiRequest)
@@ -53,13 +58,13 @@ public class GeminiAPI {
 
     public String summarizeNews(String description) {
         String prompt = description + "\n요약해줘";
-        return callGeminiAndExtractText(prompt, maxTokensSummary).orElse("요약 실패");
+        return callGeminiWithRetry(prompt, maxTokensSummary, 3).orElse("요약 실패");
     }
 
     public String inclinationAnalysis(String description) {
         String prompt = description + "\n이 뉴스 성향이 진보,중립,보수 중 어디에 해당하는지 알려주는데 답변을 '진보' 또는 '중립' 또는 '보수' 중 한 단어로만 정확히 답해줘.";
 
-        String raw = callGeminiAndExtractText(prompt, maxTokensInclination).orElse("중립");
+        String raw = callGeminiWithRetry(prompt, maxTokensInclination, 3).orElse("분석 실패");
 
         String normalized = raw.toLowerCase(Locale.ROOT)
                 .replace("progressive", "진보")
@@ -74,7 +79,29 @@ public class GeminiAPI {
             case "진보" -> "진보";
             case "보수" -> "보수";
             case "중립" -> "중립";
-            default -> "중립";
+            default -> "분석 실패";
         };
     }
+
+    private Optional<String> callGeminiWithRetry(String prompt, int maxTokens, int maxRetries) {
+        int attempt = 0;
+        while (attempt < maxRetries) {
+            try {
+                return callGeminiAndExtractText(prompt, maxTokens);
+            } catch (Exception e) {
+                attempt++;
+                if (attempt >= maxRetries) {
+                    log.warn("Gemini 호출 실패 ({}회 시도): {}", attempt, e.getMessage());
+                    return Optional.empty();
+                }
+                long delay = 500L * attempt;
+                log.info("Gemini 재시도 {}회차 - {}ms 후 재시도", attempt, delay);
+                try {
+                    Thread.sleep(delay);
+                } catch (InterruptedException ignored) {}
+            }
+        }
+        return Optional.empty();
+    }
+
 }
