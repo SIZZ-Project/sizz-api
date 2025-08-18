@@ -2,6 +2,7 @@ package sizz.api.news.component;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -103,6 +104,7 @@ public class GeminiAPI {
     }
 
     // 뉴스 요약 및 성향 분석
+    @RateLimiter(name = "geminiApi")
     public Optional<SummaryAndInclination> summarizeAndIncline(String description) {
         String prompt =
                 "다음 뉴스 본문을 한국어로 400자 이내로 요약하고, 성향을 판단해 JSON 한 줄만 출력하세요.\n" +
