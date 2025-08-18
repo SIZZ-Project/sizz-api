@@ -12,7 +12,7 @@ public class SearchNewsResponseDto {
 
     private String articleId;
     private String title;
-    private String description;
+    private String summary;
     private String link;
     private LocalDateTime pubDate;
     private String sourceName;
@@ -21,7 +21,7 @@ public class SearchNewsResponseDto {
         return new SearchNewsResponseDto(
                 news.getArticleId(),
                 news.getTitle(),
-                news.getDescription(),
+                news.getSummary(),
                 news.getLink(),
                 news.getPubDate(),
                 news.getSourceName()
