@@ -26,8 +26,8 @@ public class GeminiAPI {
     @Value("${gemini.model}")
     private String model;
 
-    @Value("${gemini.maxOutputTokens.summary}")
-    private int maxTokensSummary;
+    @Value("${gemini.maxOutputTokens.summaryAndInclination}")
+    private int maxTokensSummaryAndInclination;
 
     // JSON 파싱기
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -88,7 +88,7 @@ public class GeminiAPI {
                         "{\"summary\": \"<요약문>\", \"inclination\": \"진보|중립|보수\"}\n\n" +
                         "뉴스 본문:\n" + description;
 
-        return callGeminiWithRetry(prompt, maxTokensSummary, 3)
+        return callGeminiWithRetry(prompt, maxTokensSummaryAndInclination, 3)
                 .flatMap(this::parseSummaryAndInclination);
     }
 
