@@ -26,8 +26,8 @@ public class GeminiAPI {
     @Value("${gemini.model}")
     private String model;
 
-    @Value("${gemini.maxOutputTokens.summary}")
-    private int maxTokensSummary;
+    @Value("${gemini.maxOutputTokens.summaryAndInclination}")
+    private int maxTokensSummaryAndInclination;
 
     // JSON 파싱기
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -81,14 +81,14 @@ public class GeminiAPI {
     // 뉴스 요약 및 성향 분석
     public Optional<SummaryAndInclination> summarizeAndIncline(String description) {
         String prompt =
-                "다음 뉴스 본문을 한국어로 요약하고 성향을 판단해 JSON 한 줄로만 출력해주세요.\n" +
-                        "- 요약: 핵심 사실/주체/조치/숫자/날짜·장소가 있으면 포함, 500토큰 이내, 과장/추측 금지, 본문에 없는 정보 금지\n" +
-                        "- 성향: '진보' | '중립' | '보수' 중 하나만 반환 (정확히 이 세 단어 중 하나)\n" +
-                        "- 출력 형식: 반드시 아래 JSON 한 줄만 출력 (추가 텍스트/코드블록/주석 금지)\n\n" +
-                        "{\"summary\": \"<요약문>\", \"inclination\": \"진보|중립|보수\"}\n\n" +
+                "다음 뉴스 본문을 한국어로 400자 이내로 요약하고, 성향을 판단해 JSON 한 줄만 출력하세요.\n" +
+                        "- 요약: 핵심 사실/주체/조치/숫자/날짜·장소 포함\n" +
+                        "- 길이: 400자 이내 (한 문단으로 간결하게)\n" +
+                        "- 성향: '진보'|'중립'|'보수' 중 하나 (모호하면 '중립')\n" +
+                        "- 출력 형식: {\"summary\":\"...\",\"inclination\":\"진보|중립|보수\"}\n\n" +
                         "뉴스 본문:\n" + description;
 
-        return callGeminiWithRetry(prompt, maxTokensSummary, 3)
+        return callGeminiWithRetry(prompt, maxTokensSummaryAndInclination, 3)
                 .flatMap(this::parseSummaryAndInclination);
     }
 
