@@ -33,7 +33,7 @@ public class NewsDocument {
     private String articleId;
 
     private String title;
-    private String description;
+    private String summary;
     private String link;
     private String imageUrl;
     private String sourceId;
@@ -56,7 +56,7 @@ public class NewsDocument {
         return NewsDocument.builder()
                 .articleId(dto.getArticleId())
                 .title(dto.getTitle())
-                .description(dto.getDescription())
+                .summary(dto.getSummary())
                 .link(dto.getLink())
                 .imageUrl(dto.getImageUrl())
                 .sourceId(dto.getSourceId())

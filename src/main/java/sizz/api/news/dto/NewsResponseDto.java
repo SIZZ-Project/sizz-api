@@ -13,7 +13,7 @@ public class NewsResponseDto {
 
     private String articleId;
     private String title;
-    private String description;
+    private String summary;
     private String link;
     private List<String> category;
     private LocalDateTime pubDate;
@@ -25,7 +25,7 @@ public class NewsResponseDto {
         return new NewsResponseDto(
                 news.getArticleId(),
                 news.getTitle(),
-                news.getDescription(),
+                news.getSummary(),
                 news.getLink(),
                 news.getCategory(),
                 news.getPubDate(),

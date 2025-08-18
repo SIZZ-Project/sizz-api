@@ -15,6 +15,7 @@ public class NewsDto {
     private String articleId;
     private String title;
     private String description;
+    private String content;
     private String link;
     @JsonProperty("image_url")
     private String imageUrl;
@@ -31,5 +32,6 @@ public class NewsDto {
 
     private Long viewCount;
 
+    private String summary;
     private String inclination;
 }
