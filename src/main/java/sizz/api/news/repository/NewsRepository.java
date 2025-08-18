@@ -11,7 +11,7 @@ import java.util.List;
 public interface NewsRepository extends MongoRepository<NewsDocument, String> {
 
     boolean existsByArticleId(String articleId);
-    Page<NewsDocument> findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String title, String description, Pageable pageable);
+    Page<NewsDocument> findByTitleContainingIgnoreCaseOrSummaryContainingIgnoreCase(String title, String summary, Pageable pageable);
     List<NewsDocument> findTop5ByPubDateBetweenOrderByViewCountDescPubDateDescIdDesc(LocalDateTime start, LocalDateTime end);
 
 }

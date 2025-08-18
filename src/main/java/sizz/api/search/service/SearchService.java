@@ -22,7 +22,7 @@ public class SearchService {
     private final MongoTemplate mongo;
 
     public Page<SearchNewsResponseDto> searchNewsPage(String query, Pageable pageable) {
-        return newsRepository.findByTitleContainingIgnoreCaseOrDescriptionContainingIgnoreCase(query, query, pageable)
+        return newsRepository.findByTitleContainingIgnoreCaseOrSummaryContainingIgnoreCase(query, query, pageable)
                 .map(SearchNewsResponseDto::from);
     }
 
@@ -33,7 +33,7 @@ public class SearchService {
             String escaped = Pattern.quote(q);
             keyword = new Criteria().orOperator(
                     Criteria.where("title").regex(escaped, "i"),
-                    Criteria.where("description").regex(escaped, "i")
+                    Criteria.where("summary").regex(escaped, "i")
             );
         }
         return run(mongo, keyword, limit, cursor, SearchNewsResponseDto::from);
