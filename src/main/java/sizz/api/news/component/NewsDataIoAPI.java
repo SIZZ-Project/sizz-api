@@ -22,7 +22,7 @@ public class NewsDataIoAPI {
                         .queryParam("apikey", apiKey)
                         .queryParam("q", keyword)
                         .queryParam("language", "ko")
-                        .queryParam("full_content", 1)
+                        .queryParam("full_content", true)
                         .build())
                 .retrieve()
                 .bodyToMono(NewsApiResponse.class)
