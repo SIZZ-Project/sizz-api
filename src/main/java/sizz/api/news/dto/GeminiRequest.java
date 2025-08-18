@@ -16,7 +16,7 @@ public class GeminiRequest {
     public static GeminiRequest of(String prompt, int maxOutputTokens) {
         Part part = new Part(prompt);
         Content content = new Content(List.of(part), "user");
-        GenerationConfig config = new GenerationConfig(maxOutputTokens);
+        GenerationConfig config = new GenerationConfig(maxOutputTokens, "application/json");
         return new GeminiRequest(List.of(content), config);
     }
 
@@ -40,5 +40,6 @@ public class GeminiRequest {
     @NoArgsConstructor
     public static class GenerationConfig {
         private Integer maxOutputTokens;
+        private String responseMimeType;
     }
 }
