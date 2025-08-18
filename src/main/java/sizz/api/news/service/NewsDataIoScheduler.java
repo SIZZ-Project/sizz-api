@@ -20,7 +20,7 @@ public class NewsDataIoScheduler {
     private final NewsSyncService newsSyncService;
     private final GeminiAPI geminiAPI;
 
-    @Scheduled(fixedRateString = "${newsdata.interval-ms}", initialDelay = 10_000)
+    @Scheduled(fixedDelayString = "${newsdata.interval-ms}", initialDelay = 10_000)
     public void fetchNews(){
 
         try{

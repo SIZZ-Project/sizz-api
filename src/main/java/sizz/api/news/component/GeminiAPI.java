@@ -7,11 +7,16 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import sizz.api.news.dto.GeminiRequest;
 import sizz.api.news.dto.GeminiResponse;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Component
 @RequiredArgsConstructor
@@ -61,6 +66,7 @@ public class GeminiAPI {
                 .filter(s -> !s.isBlank());
     }
 
+    // 재시도: Retry-After 존중 + 지수 백오프(+지터), 429/5xx만 재시도
     private Optional<String> callGeminiWithRetry(String prompt, int maxTokens, int maxRetries) {
         int attempt = 0;
         while (attempt < maxRetries) {
@@ -72,12 +78,54 @@ public class GeminiAPI {
                     log.warn("Gemini 호출 실패 ({}회 시도): {}", attempt, e.getMessage());
                     return Optional.empty();
                 }
-                long delay = 500L * attempt;
-                log.info("Gemini 재시도 {}회차 - {}ms 후 재시도", attempt, delay);
-                try { Thread.sleep(delay); } catch (InterruptedException ignored) {}
+
+                long sleepMs;
+
+                if (e instanceof WebClientResponseException) {
+                    WebClientResponseException we = (WebClientResponseException) e;
+                    int status = we.getStatusCode().value();
+
+                    if (status == 429 || (status >= 500 && status < 600)) {
+                        // Retry-After 우선 (초 또는 RFC1123)
+                        String ra = we.getHeaders().getFirst("Retry-After");
+                        Long raSeconds = parseRetryAfterSeconds(ra);
+
+                        if (raSeconds != null) {
+                            sleepMs = Math.max(0L, raSeconds * 1000L);
+                        } else {
+                            long base = Math.min(30, 1 << attempt) * 1000L; // 2,4,8,16,30s
+                            long jitter = ThreadLocalRandom.current().nextLong(250, 1000);
+                            sleepMs = base + jitter;
+                        }
+                        log.warn("Gemini 재시도 {}회차 - {}ms 후 (status={})", attempt, sleepMs, status);
+                    } else {
+                        log.warn("비재시도 에러(status={}) → 중단: {}", status, we.getMessage());
+                        return Optional.empty();
+                    }
+                } else {
+                    // 네트워크/타임아웃 등
+                    long base = Math.min(30, 1 << attempt) * 1000L;
+                    long jitter = ThreadLocalRandom.current().nextLong(250, 1000);
+                    sleepMs = base + jitter;
+                    log.warn("Gemini 재시도 {}회차 - {}ms 후 (네트워크/기타)", attempt, sleepMs);
+                }
+
+                try { Thread.sleep(sleepMs); } catch (InterruptedException ignored) {}
             }
         }
         return Optional.empty();
+    }
+
+    private static Long parseRetryAfterSeconds(String v) {
+        if (v == null || v.isBlank()) return null;
+        if (v.matches("\\d+")) return Long.parseLong(v); // seconds
+        try {
+            ZonedDateTime zdt = ZonedDateTime.parse(v, DateTimeFormatter.RFC_1123_DATE_TIME);
+            long millis = zdt.toInstant().toEpochMilli() - System.currentTimeMillis();
+            return (millis > 0) ? (millis + 999) / 1000 : 0L;
+        } catch (DateTimeParseException ignore) {
+            return null;
+        }
     }
 
     // 뉴스 요약 및 성향 분석
@@ -100,7 +148,11 @@ public class GeminiAPI {
         if (text == null || text.isBlank()) return Optional.empty();
 
         try {
-            JsonNode node = objectMapper.readTree(text);
+            JsonNode node = tolerantParse(text);
+            if (node == null || !node.isObject()) {
+                log.warn("Gemini JSON 파싱 실패: object 아님");
+                return Optional.empty();
+            }
 
             String summary = safeText(node, "summary");
             String inc = safeText(node, "inclination");
@@ -116,6 +168,40 @@ public class GeminiAPI {
         } catch (Exception e) {
             log.warn("Gemini JSON 파싱 실패: {}", e.getMessage());
             return Optional.empty();
+        }
+    }
+
+    // 코드펜스/따옴표/앞뒤 잡문 보정 후 JSON 파싱
+    private JsonNode tolerantParse(String raw) {
+        if (raw == null) return null;
+        String s = raw.trim();
+        try {
+            // ```json ... ``` 코드펜스 제거
+            if (s.startsWith("```")) {
+                int end = s.indexOf("```", 3);
+                if (end > 0) {
+                    s = s.substring(3, end).replaceFirst("^json\\s*", "");
+                }
+            }
+            // 스마트 따옴표 → 표준 따옴표
+            s = s.replace('“', '"').replace('”', '"')
+                    .replace('‘', '\'').replace('’', '\'');
+
+            // JSON 덩어리만 추출(처음 '{' 또는 '['부터 마지막 '}' 또는 ']'까지)
+            int obj = s.indexOf('{');
+            int arr = s.indexOf('[');
+            int si = -1;
+            if (obj == -1) si = arr;
+            else if (arr == -1) si = obj;
+            else si = Math.min(obj, arr);
+            if (si > 0) s = s.substring(si);
+            int ei = Math.max(s.lastIndexOf('}'), s.lastIndexOf(']'));
+            if (ei > 0 && ei + 1 < s.length()) s = s.substring(0, ei + 1);
+
+            return objectMapper.readTree(s);
+        } catch (Exception e) {
+            log.warn("Gemini JSON 보정파싱 실패: {}", e.getMessage());
+            return null;
         }
     }
 
