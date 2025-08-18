@@ -69,8 +69,7 @@ gemini:
   url: https://generativelanguage.googleapis.com
   model: gemini-2.5-flash
   maxOutputTokens:
-    summary: 500
-    inclination: 20
+    summaryAndInclination: 2000
 
 
 schedule:
@@ -79,3 +78,11 @@ schedule:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+resilience4j:
+  ratelimiter:
+    instances:
+      geminiApi:
+        limit-for-period: 10
+        limit-refresh-period: 1m
+        timeout-duration: 0

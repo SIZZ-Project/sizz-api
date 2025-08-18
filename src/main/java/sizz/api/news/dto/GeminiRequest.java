@@ -1,6 +1,7 @@
 package sizz.api.news.dto;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -16,7 +17,11 @@ public class GeminiRequest {
     public static GeminiRequest of(String prompt, int maxOutputTokens) {
         Part part = new Part(prompt);
         Content content = new Content(List.of(part), "user");
-        GenerationConfig config = new GenerationConfig(maxOutputTokens);
+        GenerationConfig config = GenerationConfig.builder()
+                .maxOutputTokens(maxOutputTokens)
+                .temperature(0.4)
+                .responseMimeType("application/json")
+                .build();
         return new GeminiRequest(List.of(content), config);
     }
 
@@ -38,7 +43,10 @@ public class GeminiRequest {
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
+    @Builder
     public static class GenerationConfig {
         private Integer maxOutputTokens;
+        private Double temperature;
+        private String responseMimeType;
     }
 }
