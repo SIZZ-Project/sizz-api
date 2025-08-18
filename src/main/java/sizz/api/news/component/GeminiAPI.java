@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 import sizz.api.news.dto.GeminiRequest;
 import sizz.api.news.dto.GeminiResponse;
 
@@ -36,28 +38,50 @@ public class GeminiAPI {
     private Optional<String> callGeminiAndExtractText(String prompt, int maxTokens) {
         GeminiRequest geminiRequest = GeminiRequest.of(prompt, maxTokens);
 
-        GeminiResponse response = geminiWebClient.post()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/v1beta/models/" + model + ":generateContent")
-                        .queryParam("key", apiKey)
-                        .build())
-                .bodyValue(geminiRequest)
-                .retrieve()
-                .bodyToMono(GeminiResponse.class)
-                .block();
+        try {
+            GeminiResponse response = geminiWebClient.post()
+                    .uri(b -> b.path("/v1beta/models/" + model + ":generateContent")
+                            .queryParam("key", apiKey).build())
+                    .bodyValue(geminiRequest)
+                    .retrieve()
+                    .onStatus(HttpStatusCode::isError, r ->
+                            r.bodyToMono(String.class).flatMap(body -> {
+                                log.error("[Gemini] HTTP {}: {}", r.statusCode(), body);
+                                return Mono.error(new IllegalStateException("Gemini API error " + r.statusCode()));
+                            })
+                    )
+                    .bodyToMono(GeminiResponse.class)
+                    .block();
 
-        return Optional.ofNullable(response)
-                .map(GeminiResponse::getCandidates)
-                .filter(list -> !list.isEmpty())
-                .map(list -> list.get(0))
-                .map(GeminiResponse.Candidate::getContent)
-                .map(GeminiResponse.Content::getParts)
-                .filter(list -> !list.isEmpty())
-                .map(list -> list.get(0))
-                .map(GeminiResponse.Part::getText)
-                .map(String::trim)
-                .filter(s -> !s.isBlank());
+            log.info("[Gemini] Raw response: {}", (response == null ? "null" : objectMapper.writeValueAsString(response)));
+
+            return Optional.ofNullable(response)
+                    .map(GeminiResponse::getCandidates)
+                    .filter(list -> !list.isEmpty())
+                    .map(list -> list.get(0))
+                    .map(GeminiResponse.Candidate::getContent)
+                    .map(GeminiResponse.Content::getParts)
+                    .filter(list -> !list.isEmpty())
+                    .map(list -> list.get(0))
+                    .map(GeminiResponse.Part::getText)
+                    .map(String::trim)
+                    .map(GeminiAPI::extractJson) // ← JSON만 뽑기
+                    .filter(s -> !s.isBlank());
+
+        } catch (Exception e) {
+            log.error("[Gemini] 호출/파싱 실패: {}", e.getMessage(), e);
+            return Optional.empty();
+        }
     }
+
+    /** 모델이 ```json ... ``` 같은 포맷을 줄 때 대비해 JSON 객체만 추출 */
+    private static String extractJson(String raw){
+        if (raw == null) return null;
+        String s = raw.replace("```json","").replace("```","").trim();
+        int st = s.indexOf('{'), ed = s.lastIndexOf('}');
+        return (st>=0 && ed>st) ? s.substring(st, ed+1).trim() : s;
+    }
+
 
     private Optional<String> callGeminiWithRetry(String prompt, int maxTokens, int maxRetries) {
         int attempt = 0;
