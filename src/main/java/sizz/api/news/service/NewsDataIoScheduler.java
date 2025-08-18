@@ -37,13 +37,11 @@ public class NewsDataIoScheduler {
                 try {
                     String description = article.getDescription();
                     if (description != null && !description.isBlank()) {
-                        //뉴스 요약
-                        String summary = geminiAPI.summarizeNews(description);
-                        article.setDescription(summary);
-
-                        //뉴스 성향 분석
-                        String inclination = geminiAPI.inclinationAnalysis(description);
-                        article.setInclination(inclination);
+                        //뉴스 요약 및 성향 분석
+                        geminiAPI.summarizeAndIncline(description).ifPresent(r -> {
+                            article.setDescription(r.summary());
+                            article.setInclination(r.inclination());
+                        });
                     }
                 } catch (Exception ge) {
                     log.warn("뉴스 요약 오류 articleId={} msg={}", article.getArticleId(), ge.getMessage());
