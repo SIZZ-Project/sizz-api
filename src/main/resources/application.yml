@@ -85,4 +85,4 @@ resilience4j:
       geminiApi:
         limit-for-period: 10
         limit-refresh-period: 1m
-        timeout-duration: 0
+        timeout-duration: 6s

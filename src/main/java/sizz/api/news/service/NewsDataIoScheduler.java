@@ -36,7 +36,10 @@ public class NewsDataIoScheduler {
                 try {
                     String description = article.getDescription();
                     if (description != null && !description.isBlank()) {
-                        summarizeWithLimit(article, description);
+                        geminiAPI.summarizeAndIncline(description).ifPresent(r -> {
+                            article.setDescription(r.summary());
+                            article.setInclination(r.inclination());
+                        });
                     }
                 } catch (Exception ge) {
                     log.warn("뉴스 요약 오류 articleId={} msg={}", article.getArticleId(), ge.getMessage());
@@ -49,13 +52,5 @@ public class NewsDataIoScheduler {
         } catch (Exception e) {
             log.error("뉴스 수집 오류: {}", e.getMessage(), e);
         }
-    }
-
-    @RateLimiter(name = "geminiApi")
-    public void summarizeWithLimit(NewsDto article, String description) {
-        geminiAPI.summarizeAndIncline(description).ifPresent(r -> {
-            article.setDescription(r.summary());
-            article.setInclination(r.inclination());
-        });
     }
 }
