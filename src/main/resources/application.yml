@@ -69,7 +69,7 @@ gemini:
   url: https://generativelanguage.googleapis.com
   model: gemini-2.5-flash
   maxOutputTokens:
-    summaryAndInclination: 1000
+    summaryAndInclination: 2000
 
 schedule:
   viewSyncMs: 3600000
