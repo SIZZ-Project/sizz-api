@@ -39,7 +39,7 @@ public class BookmarksService {
     }
 
     // 유저가 북마크한 목록 (bookmarked = true 인 것만 반환)
-    public List<BookmarksResponse> getBookmarks(Long userId) {
+    public List<BookmarksResponse> getBookmarks(String userId) {
         List<BookmarksEntity> entities = bookmarksRepository.findByUserId(userId);
 
         return entities.stream()

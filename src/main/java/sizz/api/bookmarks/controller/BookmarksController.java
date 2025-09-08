@@ -28,7 +28,7 @@ public class BookmarksController {
     //뉴스 전체 조회
     @GetMapping("/users/{userId}/bookmarks")
     public ResponseEntity<List<BookmarksResponse>> getBookmarks(
-            @PathVariable Long userId
+            @PathVariable String userId
     ) {
         List<BookmarksResponse> bookmarks = bookmarkService.getBookmarks(userId);
         return ResponseEntity.ok(bookmarks);
