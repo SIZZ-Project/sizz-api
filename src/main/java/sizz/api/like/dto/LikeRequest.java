@@ -13,7 +13,7 @@ public class LikeRequest {
     private Long userId;
 
     @NotNull(message = "게시글 ID는 필수입니다.")
-    private Long articleId;
+    private String articleId;
 
     private  boolean liked;
 }

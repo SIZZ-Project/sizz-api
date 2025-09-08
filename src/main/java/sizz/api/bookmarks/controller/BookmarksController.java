@@ -18,7 +18,7 @@ public class BookmarksController {
     //토클
     @PatchMapping("/news/{articleId}/bookmark")
     public ResponseEntity<BookmarksResponse> toggleBookmark(
-            @PathVariable Long articleId,
+            @PathVariable String articleId,
             @RequestBody BookmarksRequest request
     ) {
         BookmarksResponse response = bookmarkService.toggleBookmark(request.getUserId(), articleId, request.isBookmarked());
@@ -37,8 +37,8 @@ public class BookmarksController {
     //북마크 여부 확인
     @GetMapping("/news/{articleId}/bookmark")
     public ResponseEntity<Boolean> isBookmarked(
-            @PathVariable Long articleId,
-            @RequestParam Long userId
+            @PathVariable String articleId,
+            @RequestParam String userId
     ) {
         boolean bookmarked = bookmarkService.isBookmarked(userId, articleId);
         return ResponseEntity.ok(bookmarked);

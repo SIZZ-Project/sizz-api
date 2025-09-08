@@ -18,9 +18,9 @@ public class CommentEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
-    private Long articleId;
+    private String articleId;
 
     private String userId;
 

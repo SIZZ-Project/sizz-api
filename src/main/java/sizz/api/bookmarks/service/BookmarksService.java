@@ -19,7 +19,7 @@ public class BookmarksService {
     private final BookmarksRepository bookmarksRepository;
 
 
-    public BookmarksResponse toggleBookmark(Long userId, Long articleId, boolean bookmarked) {
+    public BookmarksResponse toggleBookmark(String userId, String articleId, boolean bookmarked) {
         Optional<BookmarksEntity> optional = bookmarksRepository.findByUserIdAndArticleId(userId, articleId);
 
         BookmarksEntity entity;
@@ -49,7 +49,7 @@ public class BookmarksService {
     }
 
     // 특정 뉴스가 유저에 의해 북마크 되었는지 확인
-    public boolean isBookmarked(Long userId, Long articleId) {
+    public boolean isBookmarked(String userId, String articleId) {
         return bookmarksRepository.findByUserIdAndArticleId(userId, articleId)
                 .map(BookmarksEntity::isBookmarked)
                 .orElse(false);

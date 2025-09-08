@@ -10,10 +10,10 @@ import lombok.*;
 @AllArgsConstructor
 public class BookmarksRequest {
     @NotNull(message = "사용자 ID는 필수입니다.")
-    private Long userId;
+    private String userId;
 
     @NotNull(message = "게시글 ID는 필수입니다.")
-    private Long articleId;
+    private String articleId;
 
     private  boolean bookmarked;
 }
