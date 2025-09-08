@@ -11,9 +11,9 @@ import sizz.api.bookmarks.entity.BookmarksEntity;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookmarksResponse {
-    private Long id;
-    private Long userId;
-    private Long articleId;
+    private String id;
+    private String userId;
+    private String articleId;
     private Boolean bookmarked;
 
     // Entity -> DTO 변환 메서드

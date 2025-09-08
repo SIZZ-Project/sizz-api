@@ -18,13 +18,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 public class BookmarksEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private String id;
 
     @Column(name = "user_id", nullable = false)
-    private Long userId;
+    private String userId;
 
     @Column(name = "article_id", nullable = false)
-    private Long articleId;
+    private String articleId;
 
     @Column(name = "bookmarked", nullable = false)
     private boolean bookmarked;

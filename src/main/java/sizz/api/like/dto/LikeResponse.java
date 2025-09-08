@@ -11,7 +11,7 @@ import sizz.api.like.entity.LikeEntity;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LikeResponse {
-    private Long id;
+    private String id;
     private Long userId;
     private Long articleId;
     private Boolean liked;
