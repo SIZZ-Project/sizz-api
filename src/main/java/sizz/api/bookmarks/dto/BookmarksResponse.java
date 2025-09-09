@@ -11,7 +11,7 @@ import sizz.api.bookmarks.entity.BookmarksEntity;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookmarksResponse {
-    private String id;
+    private Long id;
     private String userId;
     private String articleId;
     private Boolean bookmarked;
