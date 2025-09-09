@@ -18,7 +18,7 @@ public class LikeController {
     //토클
     @PatchMapping("/news/{articleId}/like")
     public ResponseEntity<LikeResponse> toggleLike(
-            @PathVariable Long articleId,
+            @PathVariable String articleId,
             @RequestBody LikeRequest request
     ) {
         LikeResponse response = likeService.toggleLike(request.getUserId(), articleId, request.isLiked());
@@ -28,7 +28,7 @@ public class LikeController {
 
     @GetMapping("/users/{userId}/like")
     public ResponseEntity<List<LikeResponse>> getBookmarks(
-            @PathVariable Long userId
+            @PathVariable String userId
     ) {
         List<LikeResponse> likes = likeService.getLike(userId);
         return ResponseEntity.ok(likes);
@@ -37,8 +37,8 @@ public class LikeController {
 
     @GetMapping("/news/{articleId}/like")
     public ResponseEntity<Boolean> isLiked(
-            @PathVariable Long articleId,
-            @RequestParam Long userId
+            @PathVariable String articleId,
+            @RequestParam String userId
     ) {
         boolean liked = likeService.isliked(userId, articleId);
         return ResponseEntity.ok(liked);

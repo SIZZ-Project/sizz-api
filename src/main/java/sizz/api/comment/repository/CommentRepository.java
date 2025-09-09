@@ -8,5 +8,5 @@ import java.util.List;
 public interface CommentRepository extends JpaRepository<CommentEntity, Long> {
 
     //생성일 기준 오름차순 정렬하여 조회
-    List<CommentEntity> findByArticleIdOrderByCreatedAtAsc(Long articleId);
+    List<CommentEntity> findByArticleIdOrderByCreatedAtAsc(String articleId);
 }

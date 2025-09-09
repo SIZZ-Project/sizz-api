@@ -17,7 +17,7 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
 
-    public CommentResponse addComment(Long articleId, CommentRequest request) {
+    public CommentResponse addComment(String articleId, CommentRequest request) {
         CommentEntity comment = CommentEntity.builder()
                 .articleId(request.getArticleId())
                 .userId(request.getUserId())
@@ -28,13 +28,13 @@ public class CommentService {
         return CommentResponse.fromEntity(saved);
     }
 
-    public List<CommentResponse> getComments(Long articleId) {
+    public List<CommentResponse> getComments(String articleId) {
         return commentRepository.findByArticleIdOrderByCreatedAtAsc(articleId)
                 .stream()
                 .map(CommentResponse::fromEntity)
                 .collect(Collectors.toList());
     }
-    public CommentResponse patchComment(Long articleId, Long commentId, CommentRequest request) {
+    public CommentResponse patchComment(String articleId, Long commentId, CommentRequest request) {
         CommentEntity comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
 
