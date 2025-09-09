@@ -11,9 +11,9 @@ import sizz.api.like.entity.LikeEntity;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LikeResponse {
-    private String id;
-    private Long userId;
-    private Long articleId;
+    private Long id;
+    private String userId;
+    private String articleId;
     private Boolean liked;
 
     // Entity -> DTO 변환 메서드
