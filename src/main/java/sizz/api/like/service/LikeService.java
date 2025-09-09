@@ -19,7 +19,7 @@ public class LikeService {
     private final LikeRepository likeRepository;
 
 
-    public LikeResponse toggleLike(Long userId, Long articleId, boolean liked) {
+    public LikeResponse toggleLike(String userId, String articleId, boolean liked) {
         Optional<LikeEntity> optional = likeRepository.findByUserIdAndArticleId(userId, articleId);
 
         LikeEntity entity;
@@ -38,7 +38,7 @@ public class LikeService {
         return LikeResponse.fromEntity(saved);
     }
 
-    public List<LikeResponse> getLike(Long userId) {
+    public List<LikeResponse> getLike(String userId) {
         List<LikeEntity> entities = likeRepository.findByUserId(userId);
 
         return entities.stream()
@@ -48,7 +48,7 @@ public class LikeService {
     }
 
     // 특정 뉴스가 유저에 의해 북마크 되었는지 확인
-    public boolean isliked(Long userId, Long articleId) {
+    public boolean isliked(String userId, String articleId) {
         return likeRepository.findByUserIdAndArticleId(userId, articleId)
                 .map(LikeEntity::isLiked)
                 .orElse(false);

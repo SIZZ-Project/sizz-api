@@ -19,7 +19,7 @@ public class CommentController {
 
     @PostMapping("/{articleId}/comments")
     public ResponseEntity<CommentResponse> addComment(
-            @PathVariable Long articleId,
+            @PathVariable String articleId,
             @RequestBody CommentRequest request
     ) {
         CommentResponse response = commentService.addComment(articleId, request);
@@ -27,14 +27,14 @@ public class CommentController {
     }
 
     @GetMapping("/{articleId}/comments")
-    public ResponseEntity<List<CommentResponse>> getComments(@PathVariable Long articleId) {
+    public ResponseEntity<List<CommentResponse>> getComments(@PathVariable String articleId) {
         List<CommentResponse> comments = commentService.getComments(articleId);
         return ResponseEntity.ok(comments);
     }
 
     @PatchMapping("/{articleId}/comments/{commentId}")
     public ResponseEntity<CommentResponse> patchComment(
-            @PathVariable("articleId") Long articleId,
+            @PathVariable("articleId") String articleId,
             @PathVariable("commentId") Long commentId,
             @RequestBody CommentRequest request
     ) {
