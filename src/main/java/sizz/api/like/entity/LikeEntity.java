@@ -18,13 +18,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 public class LikeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id;
+    private Long id;
 
     @Column(name = "user_id", nullable = false)
-    private Long userId;
+    private String userId;
 
     @Column(name = "article_id", nullable = false)
-    private Long articleId;
+    private String articleId;
 
     @Column(name = "liked", nullable = false)
     private boolean liked;
