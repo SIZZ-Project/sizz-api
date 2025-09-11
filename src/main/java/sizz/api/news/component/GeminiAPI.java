@@ -168,11 +168,14 @@ public class GeminiAPI {
     @RateLimiter(name = "geminiApi")
     public Optional<SummaryAndInclination> summarizeAndIncline(String description) {
         String prompt =
-                "다음 뉴스 본문을 한국어로 400자 이내로 요약하고, 성향을 판단해 JSON 한 줄만 출력하세요.\n" +
-                        "- 요약: 핵심 사실/주체/조치/숫자/날짜·장소 포함\n" +
-                        "- 길이: 400자 이내 (한 문단으로 간결하게)\n" +
-                        "- 성향: '진보'|'중립'|'보수' 중 하나 (모호하면 '중립')\n" +
-                        "- 출력 형식: {\"summary\":\"...\",\"inclination\":\"진보|중립|보수\"}\n\n" +
+                "당신은 한국어 뉴스 편집자입니다. 아래 텍스트를 보고 JSON 한 줄만 출력하세요.\n" +
+                        "- 원문을 그대로 반복하지 말고, 의미를 3~5문장으로 압축 요약하세요.\n" +
+                        "- 원문이 불완전하거나 짧아도 확인 가능한 사실만 요약하세요.\n" +
+                        "- 새로운 사실이나 추측은 절대 추가하지 마세요.\n" +
+                        "- 요약 길이는 300~400자 이내.\n" +
+                        "- 성향은 '진보' | '중립' | '보수' 중 하나만 선택(애매하면 '중립').\n" +
+                        "- 반드시 JSON 한 줄만 출력하세요. 코드블럭, 설명 금지.\n" +
+                        "출력 예시: {\"summary\":\"...\",\"inclination\":\"중립\"}\n\n" +
                         "뉴스 본문:\n" + description;
 
         return callGeminiWithRetry(prompt, maxTokensSummaryAndInclination, MAX_RETRIES)
