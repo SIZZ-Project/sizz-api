@@ -6,7 +6,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
-import sizz.api.news.dto.CursorPage;
+import sizz.api.core.pagination.CursorPage;
 import sizz.api.news.repository.NewsRepository;
 import sizz.api.search.dto.SearchNewsResponseDto;
 
@@ -26,7 +26,7 @@ public class SearchService {
                 .map(SearchNewsResponseDto::from);
     }
 
-    public CursorPage<SearchNewsResponseDto> searchNewsCursor(String q, Integer limit, String cursor) {
+    public CursorPage<SearchNewsResponseDto> searchNewsCursor(String q, Integer limit, String after, String before) {
         Criteria keyword = new Criteria();
         if (q != null) q = q.trim();
         if (q != null && !q.isBlank()) {
@@ -36,7 +36,7 @@ public class SearchService {
                     Criteria.where("description").regex(escaped, "i")
             );
         }
-        return run(mongo, keyword, limit, cursor, SearchNewsResponseDto::from);
+        return run(mongo, keyword, limit, after, before, SearchNewsResponseDto::from);
     }
 
 }
