@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import sizz.api.news.dto.CursorPage;
+import sizz.api.core.pagination.CursorPage;
 import sizz.api.search.dto.SearchNewsResponseDto;
 import sizz.api.search.service.SearchService;
 
@@ -28,12 +28,14 @@ public class SearchController {
 
     @GetMapping("/news-cursor")
     public CursorPage<SearchNewsResponseDto> searchNewsCursor(
-            @RequestParam(required = false) String query,
+            @RequestParam String q,
             @RequestParam(defaultValue = "10") Integer limit,
-            @RequestParam(required = false) String cursor
+            @RequestParam(required = false) String after,
+            @RequestParam(required = false) String before
     ) {
-        return searchService.searchNewsCursor(query, limit, cursor);
+        return searchService.searchNewsCursor(q, limit, after, before);
     }
+
 
 
 }
