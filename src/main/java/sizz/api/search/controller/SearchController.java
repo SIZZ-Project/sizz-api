@@ -5,13 +5,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import sizz.api.core.pagination.CursorPage;
+import sizz.api.search.dto.InsightDto;
 import sizz.api.search.dto.SearchNewsResponseDto;
+import sizz.api.search.service.InsightCacheService;
 import sizz.api.search.service.SearchService;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/search")
@@ -19,6 +20,7 @@ import sizz.api.search.service.SearchService;
 public class SearchController {
 
     private final SearchService searchService;
+    private final InsightCacheService insightCacheService;
 
     @GetMapping("/news")
     public Page<SearchNewsResponseDto> searchNews(@RequestParam String query,
@@ -36,6 +38,10 @@ public class SearchController {
         return searchService.searchNewsCursor(q, limit, after, before);
     }
 
+    @GetMapping("/insight/{field}")
+    public Optional<InsightDto> getFieldInsight(@PathVariable String field) {
+        return insightCacheService.find(field);
+    }
 
 
 }
