@@ -1,6 +1,5 @@
 package sizz.api.news.service;
 
-import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -21,7 +20,7 @@ public class NewsDataIoScheduler {
     private final NewsSyncService newsSyncService;
     private final GeminiAPI geminiAPI;
 
-    @Scheduled(fixedDelayString = "${newsdata.interval-ms}", initialDelay = 10_000)
+    @Scheduled(cron = "0 0 */3 * * ?", zone = "Asia/Seoul")
     public void fetchNews() {
         try {
             NewsApiResponse response = newsDataIoAPI.fetchNews("정치");

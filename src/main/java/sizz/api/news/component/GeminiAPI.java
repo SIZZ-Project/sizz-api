@@ -1,5 +1,6 @@
 package sizz.api.news.component;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.github.resilience4j.ratelimiter.annotation.RateLimiter;
@@ -15,7 +16,7 @@ import reactor.core.publisher.Mono;
 import sizz.api.news.dto.GeminiRequest;
 import sizz.api.news.dto.GeminiResponse;
 
-import java.time.Duration;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
@@ -35,6 +36,9 @@ public class GeminiAPI {
 
     @Value("${gemini.maxOutputTokens.summaryAndInclination}")
     private int maxTokensSummaryAndInclination;
+
+    @Value("${gemini.maxOutputTokens.insightKeywords}")
+    private int maxTokensInsightKeywords;
 
     private static final long BASE_BACKOFF_MS = 800;      // 지수 백오프 시작
     private static final long MAX_BACKOFF_MS  = 8000;     // 백오프 상한
@@ -149,12 +153,23 @@ public class GeminiAPI {
         try { Thread.sleep(ms); } catch (InterruptedException ignored) {}
     }
 
-    /** 모델이 ```json ... ``` 포맷을 줄 수도 있어 JSON 객체만 추출 */
+    /** 모델이 ```json ... ``` 포맷을 줄 수도 있어 JSON 객체/배열만 추출 */
     private static String extractJson(String raw) {
         if (raw == null) return null;
         String s = raw.replace("```json", "").replace("```", "").trim();
-        int st = s.indexOf('{'), ed = s.lastIndexOf('}');
-        return (st >= 0 && ed > st) ? s.substring(st, ed + 1).trim() : s;
+
+        // 객체 {...} 시도
+        int objSt = s.indexOf('{'), objEd = s.lastIndexOf('}');
+        if (objSt >= 0 && objEd > objSt) {
+            return s.substring(objSt, objEd + 1).trim();
+        }
+
+        // 배열 [...] 시도
+        int arrSt = s.indexOf('['), arrEd = s.lastIndexOf(']');
+        if (arrSt >= 0 && arrEd > arrSt) {
+            return s.substring(arrSt, arrEd + 1).trim();
+        }
+        return s; //그대로 반환(파서에서 실패하면 Optional.empty)
     }
 
     private String safeToJson(Object o) {
@@ -223,4 +238,30 @@ public class GeminiAPI {
 
     // 결과 전달용 DTO
     public record SummaryAndInclination(String summary, String inclination) {}
+
+    @RateLimiter(name = "geminiApi")
+    public Optional<List<String>> generateKeywords(String field) {
+        String prompt =
+                "아래 형식의 JSON 배열만 출력하세요. 한국어로.\n" +
+                "- 주제: 최근 주요 " + field + " 분야 이슈 키워드\n" +
+                "- 항목 수: 6~8개\n" +
+                "- 각 항목은 정확히 \"키워드: 설명\" 형식의 문자열 하나\n" +
+                "- 설명은 한 문장, 40~60글자, 불릿/번호/마크다운/코드블럭 금지\n" +
+                "- 예시: [\"금리인하: 기준금리 인하 기대가 금융시장에 파급되고 있다.\", " +
+                "\"환율: 달러 강세로 원화 변동성이 확대되고 있다.\"]\n" +
+                "- JSON 외 어떤 텍스트도 출력 금지";
+
+        return callGeminiWithRetry(prompt, maxTokensInsightKeywords, MAX_RETRIES)
+                .flatMap(this::parseKeywords);
+    }
+
+    private Optional<List<String>> parseKeywords(String text) {
+        if (text == null || text.isBlank()) return Optional.empty();
+        try {
+            return Optional.of(objectMapper.readValue(text, new TypeReference<List<String>>(){}));
+        } catch (Exception e) {
+            log.warn("Gemini 키워드 파싱 실패: {}", e.getMessage());
+            return Optional.empty();
+        }
+    }
 }
