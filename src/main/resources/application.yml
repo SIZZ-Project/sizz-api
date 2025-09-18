@@ -64,7 +64,7 @@ jwt:
   secret: YmFzZTY0ZW5jb2RlZHNlY3JldGtleXNob3VsZGJlMzI1Ynl0ZXM=
 
 gemini:
-  apiKey: AIzaSyA-F8IHZ8M5qhmAcNQXJ3S2KN6EdyjSLU8
+  apiKey: ${GEMINI_API_KEY}
   url: https://generativelanguage.googleapis.com
   model: gemini-2.5-flash
   maxOutputTokens:
