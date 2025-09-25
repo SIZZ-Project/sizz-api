@@ -22,13 +22,13 @@ public class SearchController {
     private final SearchService searchService;
     private final InsightCacheService insightCacheService;
 
-    @GetMapping("/news")
+    @GetMapping("/newsPage")
     public Page<SearchNewsResponseDto> searchNews(@RequestParam String query,
                                                   @PageableDefault(size = 10, sort = {"pubDate","id"}, direction = Sort.Direction.DESC) Pageable pageable) {
         return searchService.searchNewsPage(query, pageable);
     }
 
-    @GetMapping("/news-cursor")
+    @GetMapping("/newsCursor")
     public CursorPage<SearchNewsResponseDto> searchNewsCursor(
             @RequestParam String q,
             @RequestParam(defaultValue = "10") Integer limit,
@@ -38,7 +38,7 @@ public class SearchController {
         return searchService.searchNewsCursor(q, limit, after, before);
     }
 
-    @GetMapping("/insight/{field}")
+    @GetMapping("/newsInsight/{field}")
     public Optional<InsightDto> getFieldInsight(@PathVariable String field) {
         return insightCacheService.find(field);
     }
