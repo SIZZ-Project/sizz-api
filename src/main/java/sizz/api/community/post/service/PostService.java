@@ -26,9 +26,9 @@ public class PostService {
 
     //게시글 작성
     @Transactional
-    public PostResponse createPost(PostRequest request) {
+    public PostResponse createPost(String email, PostRequest request) {
         PostEntity post = PostEntity.builder()
-                .userId(request.getUserId())
+                .userId(email)
                 .title(request.getTitle())
                 .content(request.getContent())
                 .imageUrl(request.getImageUrl())
