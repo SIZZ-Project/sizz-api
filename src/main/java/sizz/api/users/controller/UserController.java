@@ -1,12 +1,12 @@
 package sizz.api.users.controller;
 
+import lombok.RequiredArgsConstructor;
 import sizz.api.users.dto.ApiResponse;
 import sizz.api.users.dto.LoginRequest;
 import sizz.api.users.dto.SignupRequest;
 import sizz.api.users.entity.User;
 import sizz.api.users.service.UserService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.Authentication;
@@ -19,43 +19,43 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
+@RequiredArgsConstructor
 public class UserController {
-    
-    @Autowired
-    private UserService userService;
+
+    private final UserService userService;
 
     @PostMapping("/signup")
     public ResponseEntity<ApiResponse> signup(@Valid @RequestBody SignupRequest signupRequest,
-                                            BindingResult bindingResult) {
-        
+                                              BindingResult bindingResult) {
+
         if (bindingResult.hasErrors()) {
             Map<String, String> errors = new HashMap<>();
-            bindingResult.getFieldErrors().forEach(error -> 
-                errors.put(error.getField(), error.getDefaultMessage()));
-            
+            bindingResult.getFieldErrors().forEach(error ->
+                    errors.put(error.getField(), error.getDefaultMessage()));
+
             return ResponseEntity.badRequest()
-                .body(new ApiResponse(false, "입력값을 확인해주세요.", errors));
+                    .body(new ApiResponse(false, "입력값을 확인해주세요.", errors));
         }
-        
+
         try {
             User user = userService.createUser(signupRequest);
-            String token = userService.login(user.getEmail(), signupRequest.getPassword()); 
-        
+            String token = userService.login(user.getEmail(), signupRequest.getPassword());
+
             Map<String, Object> responseData = new HashMap<>();
             responseData.put("user", Map.of(
-                "id", user.getId(),
-                "email", user.getEmail(),
-                "nickname", user.getNickname(),
-                "createdAt", user.getCreatedAt(),
-                "token", token
+                    "id", user.getId(),
+                    "email", user.getEmail(),
+                    "nickname", user.getNickname(),
+                    "createdAt", user.getCreatedAt(),
+                    "token", token
             ));
-            
+
             return ResponseEntity.ok(
-                new ApiResponse(true, "회원가입이 완료되었습니다.", responseData));
-                
+                    new ApiResponse(true, "회원가입이 완료되었습니다.", responseData));
+
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest()
-                .body(new ApiResponse(false, e.getMessage()));
+                    .body(new ApiResponse(false, e.getMessage()));
         }
     }
 
@@ -85,22 +85,22 @@ public class UserController {
 
         return ResponseEntity.ok(new ApiResponse(true, "현재 사용자 정보", userData));
     }
-    
+
     @GetMapping("/check/email")
     public ResponseEntity<ApiResponse> checkEmailAvailability(@RequestParam String email) {
         boolean exists = userService.existsByEmail(email);
-        
+
         if (exists) {
             return ResponseEntity.ok(new ApiResponse(false, "이미 사용 중인 이메일입니다."));
         } else {
             return ResponseEntity.ok(new ApiResponse(true, "사용 가능한 이메일입니다."));
         }
     }
-    
+
     @GetMapping("/check/nickname")
     public ResponseEntity<ApiResponse> checkNicknameAvailability(@RequestParam String nickname) {
         boolean exists = userService.existsByNickname(nickname);
-        
+
         if (exists) {
             return ResponseEntity.ok(new ApiResponse(false, "이미 사용 중인 닉네임입니다."));
         } else {

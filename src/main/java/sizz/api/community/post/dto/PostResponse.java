@@ -3,6 +3,7 @@ package sizz.api.community.post.dto;
 import lombok.Builder;
 import lombok.Getter;
 import sizz.api.community.post.entity.PostEntity;
+import sizz.api.reaction.dto.ReactionType;
 
 import java.time.format.DateTimeFormatter;
 
@@ -18,9 +19,10 @@ public class PostResponse {
     private int likeCount;
     private int commentCount;
     private String createdAt;
+    private ReactionType myReaction;
 
     // Entity → DTO
-    public static PostResponse fromEntity(PostEntity post) {
+    public static PostResponse fromEntity(PostEntity post, ReactionType myReaction) {
         return PostResponse.builder()
                 .id(post.getId())
                 .userId(post.getUserId())
@@ -31,6 +33,7 @@ public class PostResponse {
                 .commentCount(post.getCommentCount())
                 .createdAt(post.getCreatedAt()
                         .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")))
+                .myReaction(myReaction)
                 .build();
     }
 }

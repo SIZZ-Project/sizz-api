@@ -1,6 +1,7 @@
 package sizz.api.community.post.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import sizz.api.community.post.entity.PostEntity;
@@ -21,4 +22,10 @@ public interface PostRepository extends JpaRepository<PostEntity, Long> {
 
     //검색
     List<PostEntity> findByTitleContainingOrContentContaining(String titleKeyword, String contentKeyword);
+
+    //좋아요 수 업데이트
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("update PostEntity p set p.likeCount = p.likeCount + :delta where p.id = :postId")
+    void addLikeCount(@Param("postId") Long postId, @Param("delta") int delta);
+
 }
