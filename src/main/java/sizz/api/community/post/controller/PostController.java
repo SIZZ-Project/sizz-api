@@ -25,8 +25,7 @@ public class PostController {
             @RequestBody PostRequest request
     ) {
         if (email == null) return ResponseEntity.status(401).build();
-        request.setUserId(email);
-        PostResponse response = postService.createPost(request);
+        PostResponse response = postService.createPost(email, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
