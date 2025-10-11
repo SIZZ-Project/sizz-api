@@ -4,6 +4,7 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import sizz.api.community.post.repository.PostRepository;
 import sizz.api.reaction.dto.ReactionResponse;
 import sizz.api.reaction.dto.ReactionType;
 import sizz.api.reaction.entity.PostReactionEntity;
@@ -16,19 +17,28 @@ import java.util.Optional;
 public class PostReactionService {
 
     private final PostReactionRepository postReactionRepository;
+    private final PostRepository postRepository;
 
     @Transactional
     public ReactionResponse toggleReaction(String userId, Long postId, ReactionType newReaction) {
+        ReactionType before = null; // delta 계산을 위해 이전 상태 보관
+
         try {
             Optional<PostReactionEntity> optional = postReactionRepository.findByUserIdAndPostId(userId, postId);
 
             PostReactionEntity doc;
             if (optional.isPresent()) {
                 doc = optional.get();
+                before = doc.getReaction();
 
-                // 동일 반응이면 삭제(= 토글 off)
-                if (doc.getReaction() == newReaction) {
+                // 1) 동일 반응 → 삭제(토글 OFF)
+                if (before == newReaction) {
                     postReactionRepository.delete(doc);
+
+                    // after = null
+                    int delta = -(before == ReactionType.LIKE ? 1 : 0);
+                    if (delta != 0) postRepository.addLikeCount(postId, delta);
+
                     return ReactionResponse.fromPost(
                             PostReactionEntity.builder()
                                     .userId(userId)
@@ -38,11 +48,11 @@ public class PostReactionService {
                     );
                 }
 
-                // 다른 반응이면 변경
+                // 2) 다른 반응 → 변경
                 doc.setReaction(newReaction);
 
             } else {
-                // 없으면 새로 생성
+                // 3) 없으면 새로 생성
                 doc = PostReactionEntity.builder()
                         .userId(userId)
                         .postId(postId)
@@ -51,11 +61,21 @@ public class PostReactionService {
             }
 
             PostReactionEntity saved = postReactionRepository.save(doc);
+
+            ReactionType after = saved.getReaction();
+            int delta = (after == ReactionType.LIKE ? 1 : 0) - (before == ReactionType.LIKE ? 1 : 0);
+            if (delta != 0) postRepository.addLikeCount(postId, delta);
+
             return ReactionResponse.fromPost(saved);
 
         } catch (DataIntegrityViolationException e) {
-            // 유니크 충돌 재조회
+            // 유니크 충돌 재조회 → 최종 상태 기반으로 likeCount 보정
             var current = postReactionRepository.findByUserIdAndPostId(userId, postId).orElse(null);
+            ReactionType after = (current == null) ? null : current.getReaction();
+
+            int delta = ((after == ReactionType.LIKE) ? 1 : 0) - ((before == ReactionType.LIKE) ? 1 : 0);
+            if (delta != 0) postRepository.addLikeCount(postId, delta);
+
             return (current == null)
                     ? ReactionResponse.fromPost(PostReactionEntity.builder()
                     .userId(userId).postId(postId).reaction(null).build())
@@ -63,12 +83,4 @@ public class PostReactionService {
         }
     }
 
-    // 유저의 특정 게시글 대한 반응 조회
-    @Transactional(readOnly = true)
-    public ReactionType getReaction(String userId, Long postId) {
-        return postReactionRepository.findByUserIdAndPostId(userId, postId)
-                .map(PostReactionEntity::getReaction)
-                .orElse(null);
-    }
-    
 }

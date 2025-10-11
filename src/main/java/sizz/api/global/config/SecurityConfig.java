@@ -11,10 +11,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import sizz.api.users.config.OAuth2LoginSuccessHandler;
+import sizz.api.users.security.JwtTokenFilter;
 
 import java.util.List;
 
@@ -32,7 +34,7 @@ public class SecurityConfig {
 
     @Bean
     @Order(1)
-    public SecurityFilterChain jwtApiFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain jwtApiFilterChain(HttpSecurity http, JwtTokenFilter jwtTokenFilter) throws Exception {
         http
                 .securityMatcher("/api/**")
                 .cors(withDefaults())
@@ -46,7 +48,8 @@ public class SecurityConfig {
                         .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers("/api/**").permitAll()
                         .anyRequest().denyAll()
-                );
+                )
+                .addFilterBefore(jwtTokenFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 

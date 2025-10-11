@@ -72,11 +72,4 @@ public class NewsReactionService {
             return ReactionResponse.fromNews(current);
         }
     }
-
-    // 유저의 특정 뉴스에 대한 반응 조회
-    public ReactionType getReaction(String userId, String articleId) {
-        return newsReactionRepository.findByUserIdAndArticleId(userId, articleId)
-                .map(NewsReactionDocument::getReaction)
-                .orElse(null);
-    }
 }

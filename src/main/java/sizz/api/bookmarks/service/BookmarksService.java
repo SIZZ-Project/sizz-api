@@ -14,10 +14,8 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional
-
 public class BookmarksService {
     private final BookmarksRepository bookmarksRepository;
-
 
     public BookmarksResponse toggleBookmark(String userId, String articleId, boolean bookmarked) {
         Optional<BookmarksEntity> optional = bookmarksRepository.findByUserIdAndArticleId(userId, articleId);

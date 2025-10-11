@@ -2,6 +2,7 @@ package sizz.api.bookmarks.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import sizz.api.bookmarks.dto.BookmarksRequest;
 import sizz.api.bookmarks.dto.BookmarksResponse;
@@ -16,33 +17,38 @@ public class BookmarksController {
     private final BookmarksService bookmarkService;
 
     //토클
-    @PatchMapping("/news/{articleId}/bookmark")
+    @PatchMapping("/{articleId}/bookmark")
     public ResponseEntity<BookmarksResponse> toggleBookmark(
+            @AuthenticationPrincipal String email,
             @PathVariable String articleId,
             @RequestBody BookmarksRequest request
     ) {
-        BookmarksResponse response = bookmarkService.toggleBookmark(request.getUserId(), articleId, request.isBookmarked());
+        if (email == null) return ResponseEntity.status(401).build();
+
+        BookmarksResponse response = bookmarkService.toggleBookmark(email, articleId, request.isBookmarked());
         return ResponseEntity.ok(response);
     }
 
     //뉴스 전체 조회
-    @GetMapping("/users/{userId}/bookmarks")
+    @GetMapping("/users/me/bookmarks")
     public ResponseEntity<List<BookmarksResponse>> getBookmarks(
-            @PathVariable String userId
+            @AuthenticationPrincipal String email
     ) {
-        List<BookmarksResponse> bookmarks = bookmarkService.getBookmarks(userId);
+        if (email == null) return ResponseEntity.status(401).build();
+
+        List<BookmarksResponse> bookmarks = bookmarkService.getBookmarks(email);
         return ResponseEntity.ok(bookmarks);
     }
 
     //북마크 여부 확인
-    @GetMapping("/news/{articleId}/bookmark")
+    @GetMapping("/{articleId}/bookmark")
     public ResponseEntity<Boolean> isBookmarked(
-            @PathVariable String articleId,
-            @RequestParam String userId
+            @AuthenticationPrincipal String email,
+            @PathVariable String articleId
     ) {
-        boolean bookmarked = bookmarkService.isBookmarked(userId, articleId);
+        if (email == null) return ResponseEntity.status(401).build();
+
+        boolean bookmarked = bookmarkService.isBookmarked(email, articleId);
         return ResponseEntity.ok(bookmarked);
     }
-
-
 }

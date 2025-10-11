@@ -3,6 +3,7 @@ package sizz.api.news.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import sizz.api.news.entity.NewsDocument;
+import sizz.api.reaction.dto.ReactionType;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,8 +21,9 @@ public class NewsResponseDto {
     private String sourceName;
     private Long viewCount;
     private String inclination;
+    private ReactionType reactionType;
 
-    public static NewsResponseDto from(NewsDocument news) {
+    public static NewsResponseDto from(NewsDocument news, ReactionType reactionType) {
         return new NewsResponseDto(
                 news.getArticleId(),
                 news.getTitle(),
@@ -31,7 +33,8 @@ public class NewsResponseDto {
                 news.getPubDate(),
                 news.getSourceName(),
                 news.getViewCount(),
-                news.getInclination()
+                news.getInclination(),
+                reactionType
         );
     }
 

@@ -2,6 +2,7 @@ package sizz.api.community.post.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import sizz.api.community.post.dto.PostRequest;
 import sizz.api.community.post.dto.PostResponse;
@@ -18,53 +19,71 @@ public class PostController {
     private final PostService postService;
 
     //작성
-    @PostMapping("{userId}/{id}")
-    public ResponseEntity<ApiResponse<PostResponse>> createPost(@RequestBody PostRequest request) {
+    @PostMapping
+    public ResponseEntity<ApiResponse<PostResponse>> createPost(
+            @AuthenticationPrincipal String email,
+            @RequestBody PostRequest request
+    ) {
+        if (email == null) return ResponseEntity.status(401).build();
+        request.setUserId(email);
         PostResponse response = postService.createPost(request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     //수정
-    @PutMapping("{userId}/{id}")
+    @PutMapping("/{postId}")
     public ResponseEntity<ApiResponse<PostResponse>> updatePost(
-            @PathVariable Long id,
-            @RequestBody PostRequest request) {
-        PostResponse response = postService.updatePost(id, request);
+            @AuthenticationPrincipal String email,
+            @PathVariable Long postId,
+            @RequestBody PostRequest request
+    ) {
+        if (email == null) return ResponseEntity.status(401).build();
+        PostResponse response = postService.updatePost(email, postId, request);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
     //게시글 삭제
-    @DeleteMapping("{userId}/{id}")
-    public ResponseEntity<ApiResponse<Void>> deletePost(@PathVariable Long id) {
-        postService.deletePost(id);
+    @DeleteMapping("/{postId}")
+    public ResponseEntity<ApiResponse<Void>> deletePost(
+            @AuthenticationPrincipal String email,
+            @PathVariable Long postId
+    ) {
+        if (email == null) return ResponseEntity.status(401).build();
+        postService.deletePost(email, postId);
         return ResponseEntity.ok(ApiResponse.successMessage("게시글이 삭제되었습니다."));
     }
 
     //커뮤니티 홈 - 최신글 10개
     @GetMapping("/home")
-    public ResponseEntity<ApiResponse<List<PostResponse>>> getRecentPosts() {
-        List<PostResponse> posts = postService.getRecentPosts();
+    public ResponseEntity<ApiResponse<List<PostResponse>>> getRecentPosts(@AuthenticationPrincipal String email) {
+        List<PostResponse> posts = postService.getRecentPosts(email);
         return ResponseEntity.ok(ApiResponse.success(posts));
     }
 
     //실시간 HOT - 오늘 날짜 + 좋아요 순 Top 5
     @GetMapping("/hot")
-    public ResponseEntity<ApiResponse<List<PostResponse>>> getTodayHotPosts() {
-        List<PostResponse> posts = postService.getTodayHotPosts();
+    public ResponseEntity<ApiResponse<List<PostResponse>>> getTodayHotPosts(@AuthenticationPrincipal String email) {
+        List<PostResponse> posts = postService.getTodayHotPosts(email);
         return ResponseEntity.ok(ApiResponse.success(posts));
     }
 
     //게시글 검색 (제목 + 내용)
     @GetMapping("/search")
-    public ResponseEntity<ApiResponse<List<PostResponse>>> searchPosts(@RequestParam String keyword) {
-        List<PostResponse> posts = postService.searchPosts(keyword);
+    public ResponseEntity<ApiResponse<List<PostResponse>>> searchPosts(
+            @AuthenticationPrincipal String email,
+            @RequestParam String keyword
+    ) {
+        List<PostResponse> posts = postService.searchPosts(email, keyword);
         return ResponseEntity.ok(ApiResponse.success(posts));
     }
 
     //상세조회
-    @GetMapping("/{id}")
-    public ResponseEntity<ApiResponse<PostResponse>> getPost(@PathVariable Long id) {
-        PostResponse response = postService.getPost(id);
+    @GetMapping("/{postId}")
+    public ResponseEntity<ApiResponse<PostResponse>> getPost(
+            @AuthenticationPrincipal String email,
+            @PathVariable Long postId
+    ) {
+        PostResponse response = postService.getPost(email, postId);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 }
