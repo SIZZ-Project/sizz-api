@@ -9,9 +9,6 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class BookmarksRequest {
-    @NotNull(message = "사용자 ID는 필수입니다.")
-    private String userId;
-
     @NotNull(message = "게시글 ID는 필수입니다.")
     private String articleId;
 
