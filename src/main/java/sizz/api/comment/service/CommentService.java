@@ -1,7 +1,10 @@
 package sizz.api.comment.service;
 
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import sizz.api.comment.dto.CommentRequest;
 import sizz.api.comment.dto.CommentResponse;
 import sizz.api.comment.entity.CommentEntity;
@@ -17,10 +20,11 @@ public class CommentService {
 
     private final CommentRepository commentRepository;
 
-    public CommentResponse addComment(String articleId, CommentRequest request) {
+    @Transactional
+    public CommentResponse addComment(String userId, String articleId, CommentRequest request) {
         CommentEntity comment = CommentEntity.builder()
-                .articleId(request.getArticleId())
-                .userId(request.getUserId())
+                .articleId(articleId)
+                .userId(userId)
                 .content(request.getContent())
                 .build();
 
@@ -34,12 +38,19 @@ public class CommentService {
                 .map(CommentResponse::fromEntity)
                 .collect(Collectors.toList());
     }
-    public CommentResponse patchComment(String articleId, Long commentId, CommentRequest request) {
+
+    @Transactional
+    public CommentResponse patchComment(String email, String articleId, Long commentId, CommentRequest request) {
+
         CommentEntity comment = commentRepository.findById(commentId)
-                .orElseThrow(() -> new IllegalArgumentException("댓글이 존재하지 않습니다."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "댓글이 존재하지 않습니다."));
+
+        if(!email.equals(comment.getUserId())){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "수정 권한이 없습니다.");
+        }
 
         if (!comment.getArticleId().equals(articleId)) {
-            throw new IllegalArgumentException("해당 뉴스 댓글이 아닙니다.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "해당 뉴스 댓글이 아닙니다.");
         }
 
         if (request.getContent() != null) {
@@ -50,10 +61,18 @@ public class CommentService {
         return CommentResponse.fromEntity(updated);
     }
 
-    public void deleteComment(Long commentId) {
-        if (!commentRepository.existsById(commentId)) {
-            throw new IllegalArgumentException("댓글이 존재하지 않습니다.");
+    @Transactional
+    public void deleteComment(String email, String articleId, Long commentId) {
+        CommentEntity comment = commentRepository.findById(commentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "댓글이 존재하지 않습니다."));
+
+        if(!email.equals(comment.getUserId())){
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "삭제 권한이 없습니다.");
         }
+        if (!comment.getArticleId().equals(articleId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "해당 뉴스 댓글이 아닙니다.");
+        }
+
         commentRepository.deleteById(commentId);
     }
 }
