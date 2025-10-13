@@ -47,22 +47,21 @@ jobs:
         run: |
           aws s3 cp build/libs/sizz-api-0.0.1-SNAPSHOT.jar s3://$S3_BUCKET/$S3_KEY --acl private
 
-      # --- 핵심: SSM commands를 파일로 만들어 넘김(@file) ---
       - name: Deploy via SSM (write env + download jar + restart)
         id: ssm
         run: |
           cat > /tmp/ssm-params.json <<'JSON'
           {
             "commands": [
-              "bash -lc 'set -e; \
-              sudo mkdir -p /etc/sizz /opt/sizz/build/libs; \
-              cat > /etc/sizz/sizz-api.env <<\"EOF\"\nGEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}\nGOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}\nGOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}\nEOF\n\
-              which aws || (sudo apt-get update && sudo apt-get install -y awscli); \
-              aws s3 cp s3://$S3_BUCKET/$S3_KEY /tmp/sizz-api.jar; \
-              sudo mv /tmp/sizz-api.jar /opt/sizz/build/libs/sizz-api-0.0.1-SNAPSHOT.jar; \
-              sudo chmod 600 /etc/sizz/sizz-api.env; \
-              sudo systemctl daemon-reload; \
-              sudo systemctl restart sizz-api'"
+              "set -e",
+              "sudo mkdir -p /etc/sizz /opt/sizz/build/libs",
+              "sudo bash -c 'cat > /etc/sizz/sizz-api.env <<\"EOF\"\nGEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}\nGOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}\nGOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}\nEOF'",
+              "which aws || (sudo apt-get update && sudo apt-get install -y awscli)",
+              "aws s3 cp s3://$S3_BUCKET/$S3_KEY /tmp/sizz-api.jar",
+              "sudo mv /tmp/sizz-api.jar /opt/sizz/build/libs/sizz-api-0.0.1-SNAPSHOT.jar",
+              "sudo chmod 600 /etc/sizz/sizz-api.env",
+              "sudo systemctl daemon-reload",
+              "sudo systemctl restart sizz-api"
             ]
           }
           JSON
