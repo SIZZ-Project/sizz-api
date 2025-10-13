@@ -1,4 +1,4 @@
-name: Deploy to GCP
+name: Deploy to AWS
 
 on:
   push:
@@ -26,54 +26,61 @@ jobs:
         run: ./gradlew build
 
       - name: Rename jar to match systemd target
+        shell: bash
         run: |
           JAR=$(ls build/libs/*SNAPSHOT.jar | head -n 1)
           if [ "$JAR" != "build/libs/sizz-api-0.0.1-SNAPSHOT.jar" ]; then
             cp "$JAR" build/libs/sizz-api-0.0.1-SNAPSHOT.jar
           fi
 
-      - name: Create target directory on GCP
+      - name: Create target directory on AWS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.GCP_HOST }}
-          username: ${{ secrets.GCP_USER }}
-          key: ${{ secrets.GCP_SSH_KEY }}
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}   # 예: ubuntu
+          key: ${{ secrets.AWS_SSH_KEY }}
           script: |
-            mkdir -p /home/${{ secrets.GCP_USER }}/build/libs
+            sudo mkdir -p /opt/sizz/build/libs
+            sudo chown -R ${{ secrets.AWS_USER }}:${{ secrets.AWS_USER }} /opt/sizz
 
-      - name: Copy executable jar to GCP instance via SCP
+      - name: Copy executable jar to AWS via SCP
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.GCP_HOST }}
-          username: ${{ secrets.GCP_USER }}
-          key: ${{ secrets.GCP_SSH_KEY }}
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
           source: build/libs/sizz-api-0.0.1-SNAPSHOT.jar
-          target: /home/${{ secrets.GCP_USER }}/build/libs
+          target: /opt/sizz/build/libs
           strip_components: 2
 
-      - name: Write env file on GCP (systemd EnvironmentFile)
+      - name: Write env file on AWS (systemd EnvironmentFile)
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.GCP_HOST }}
-          username: ${{ secrets.GCP_USER }}
-          key: ${{ secrets.GCP_SSH_KEY }}
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
           script: |
             sudo mkdir -p /etc/sizz
-            sudo sh -c "printf '%s\n' 'GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}' > /etc/sizz/sizz-api.env"
+            sudo bash -c "cat > /etc/sizz/sizz-api.env" <<'ENV'
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            # NEWSDATA_API_KEY=${{ secrets.NEWSDATA_API_KEY }}
+            # JWT_SECRET=${{ secrets.JWT_SECRET }}
+            ENV
             sudo chmod 600 /etc/sizz/sizz-api.env
 
-      - name: Restart Spring Boot service on GCP
+      - name: Restart Spring Boot service on AWS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.GCP_HOST }}
-          username: ${{ secrets.GCP_USER }}
-          key: ${{ secrets.GCP_SSH_KEY }}
+          host: ${{ secrets.AWS_HOST }}
+          username: ${{ secrets.AWS_USER }}
+          key: ${{ secrets.AWS_SSH_KEY }}
           script: |
             echo "[1] Reload systemd daemon"
             sudo systemctl daemon-reload
-
             echo "[2] Restart Spring Boot application"
             sudo systemctl restart sizz-api
-
-            echo "[3] Show service status"
-            sudo systemctl status sizz-api --no-pager
+            echo "[3] Show service status (tail)"
+            sudo systemctl status sizz-api --no-pager || true
+            sudo journalctl -u sizz-api -n 50 --no-pager || true
