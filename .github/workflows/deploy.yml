@@ -1,86 +1,98 @@
-name: Deploy to AWS
+name: Deploy to AWS via SSM (no-SSH)
 
 on:
   push:
-    branches:
-      - staging
+    branches: [ staging ]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
+    env:
+      AWS_REGION:  ${{ secrets.AWS_REGION }}
+      S3_BUCKET:   ${{ vars.S3_BUCKET }}
+      S3_KEY:      ${{ vars.S3_KEY }}
+      INSTANCE_ID: ${{ vars.INSTANCE_ID }}
+
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: 21
 
-      - name: Grant execute permission to gradlew
-        run: chmod +x ./gradlew
+      - name: Build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build
 
-      - name: Build with Gradle
-        run: ./gradlew build
-
-      - name: Rename jar to match systemd target
-        shell: bash
+      - name: Normalize jar name
         run: |
           JAR=$(ls build/libs/*SNAPSHOT.jar | head -n 1)
           if [ "$JAR" != "build/libs/sizz-api-0.0.1-SNAPSHOT.jar" ]; then
             cp "$JAR" build/libs/sizz-api-0.0.1-SNAPSHOT.jar
           fi
 
-      - name: Create target directory on AWS
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          host: ${{ secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USER }}   # 예: ubuntu
-          key: ${{ secrets.AWS_SSH_KEY }}
-          script: |
-            sudo mkdir -p /opt/sizz/build/libs
-            sudo chown -R ${{ secrets.AWS_USER }}:${{ secrets.AWS_USER }} /opt/sizz
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            ${{ env.AWS_REGION }}
 
-      - name: Copy executable jar to AWS via SCP
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USER }}
-          key: ${{ secrets.AWS_SSH_KEY }}
-          source: build/libs/sizz-api-0.0.1-SNAPSHOT.jar
-          target: /opt/sizz/build/libs
-          strip_components: 2
+      - name: Upload jar to S3 (private)
+        run: |
+          aws s3 cp build/libs/sizz-api-0.0.1-SNAPSHOT.jar s3://$S3_BUCKET/$S3_KEY --acl private
 
-      - name: Write env file on AWS (systemd EnvironmentFile)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USER }}
-          key: ${{ secrets.AWS_SSH_KEY }}
-          script: |
-            sudo mkdir -p /etc/sizz
-            sudo bash -c "cat > /etc/sizz/sizz-api.env" <<'ENV'
-            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-            # NEWSDATA_API_KEY=${{ secrets.NEWSDATA_API_KEY }}
-            # JWT_SECRET=${{ secrets.JWT_SECRET }}
-            ENV
-            sudo chmod 600 /etc/sizz/sizz-api.env
+      # --- 핵심: SSM commands를 파일로 만들어 넘김(@file) ---
+      - name: Deploy via SSM (write env + download jar + restart)
+        id: ssm
+        run: |
+          cat > /tmp/ssm-params.json <<'JSON'
+          {
+            "commands": [
+              "bash -lc 'set -e; \
+              sudo mkdir -p /etc/sizz /opt/sizz/build/libs; \
+              cat > /etc/sizz/sizz-api.env <<\"EOF\"\nGEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}\nGOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}\nGOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}\nEOF\n\
+              which aws || (sudo apt-get update && sudo apt-get install -y awscli); \
+              aws s3 cp s3://$S3_BUCKET/$S3_KEY /tmp/sizz-api.jar; \
+              sudo mv /tmp/sizz-api.jar /opt/sizz/build/libs/sizz-api-0.0.1-SNAPSHOT.jar; \
+              sudo chmod 600 /etc/sizz/sizz-api.env; \
+              sudo systemctl daemon-reload; \
+              sudo systemctl restart sizz-api'"
+            ]
+          }
+          JSON
 
-      - name: Restart Spring Boot service on AWS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.AWS_HOST }}
-          username: ${{ secrets.AWS_USER }}
-          key: ${{ secrets.AWS_SSH_KEY }}
-          script: |
-            echo "[1] Reload systemd daemon"
-            sudo systemctl daemon-reload
-            echo "[2] Restart Spring Boot application"
-            sudo systemctl restart sizz-api
-            echo "[3] Show service status (tail)"
-            sudo systemctl status sizz-api --no-pager || true
-            sudo journalctl -u sizz-api -n 50 --no-pager || true
+          CMD_ID=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy sizz-api" \
+            --parameters file:///tmp/ssm-params.json \
+            --query 'Command.CommandId' --output text)
+
+          echo "command_id=$CMD_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Wait until SSM command finishes
+        run: |
+          for i in {1..30}; do
+            STATUS=$(aws ssm list-command-invocations \
+              --command-id "${{ steps.ssm.outputs.command_id }}" \
+              --details --query 'CommandInvocations[0].Status' --output text || true)
+            echo "SSM status: $STATUS"
+            if [ "$STATUS" = "Success" ]; then exit 0; fi
+            if [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "TimedOut" ]; then exit 1; fi
+            sleep 5
+          done
+          echo "Timeout waiting SSM command"; exit 1
+
+      - name: Tail service logs
+        run: |
+          aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --parameters commands='["sudo journalctl -u sizz-api -n 80 --no-pager"]' \
+            --output text
