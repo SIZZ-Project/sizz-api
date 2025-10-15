@@ -29,7 +29,7 @@ jobs:
           chmod +x ./gradlew
           ./gradlew build
 
-      # 산출물 이름을 고정
+      # 산출물 이름 고정
       - name: Normalize jar name
         run: |
           JAR=$(ls build/libs/*SNAPSHOT.jar | head -n 1)
@@ -48,9 +48,7 @@ jobs:
         run: |
           aws s3 cp build/libs/sizz-api-0.0.1-SNAPSHOT.jar "s3://$S3_BUCKET/$S3_KEY"
 
-      # === 핵심: SSM으로 원격 배포 ===
-      # - 비밀은 Parameter Store(SecureString)에서 읽어 /etc/sizz/sizz-api.env 파일로 저장
-      # - S3 버킷/키는 원격 셸에 export 해서 사용
+      # === SSM으로 원격 배포 (비밀값을 실제 값으로 기록) ===
       - name: Deploy via SSM (write env + download jar + restart)
         id: ssm
         run: |
@@ -59,21 +57,18 @@ jobs:
             "commands": [
               "set -e",
               "sudo mkdir -p /etc/sizz /opt/sizz/build/libs",
-
               "which aws || (sudo apt-get update && sudo apt-get install -y awscli jq)",
 
               "echo '>> write /etc/sizz/sizz-api.env from Parameter Store'",
-              "sudo bash -c 'cat > /etc/sizz/sizz-api.env <<\"EOF\"\nGEMINI_API_KEY=$(aws ssm get-parameter --name \"/sizz/GEMINI_API_KEY\" --with-decryption --query \"Parameter.Value\" --output text)\nGOOGLE_CLIENT_ID=$(aws ssm get-parameter --name \"/sizz/GOOGLE_CLIENT_ID\" --with-decryption --query \"Parameter.Value\" --output text)\nGOOGLE_CLIENT_SECRET=$(aws ssm get-parameter --name \"/sizz/GOOGLE_CLIENT_SECRET\" --with-decryption --query \"Parameter.Value\" --output text)\nEOF'",
+              "GEMINI=$(aws ssm get-parameter --name \"/sizz/GEMINI_API_KEY\" --with-decryption --query \"Parameter.Value\" --output text | tr -d '\\n')",
+              "GCID=$(aws ssm get-parameter --name \"/sizz/GOOGLE_CLIENT_ID\" --with-decryption --query \"Parameter.Value\" --output text | tr -d '\\n')",
+              "GSEC=$(aws ssm get-parameter --name \"/sizz/GOOGLE_CLIENT_SECRET\" --with-decryption --query \"Parameter.Value\" --output text | tr -d '\\n')",
+              "sudo bash -lc 'printf \"GEMINI_API_KEY=%s\nGOOGLE_CLIENT_ID=%s\nGOOGLE_CLIENT_SECRET=%s\n\" \"$GEMINI\" \"$GCID\" \"$GSEC\" > /etc/sizz/sizz-api.env'",
               "sudo chmod 600 /etc/sizz/sizz-api.env",
-
-              "echo '>> export S3 variables'",
-              "export S3_BUCKET=${{ vars.S3_BUCKET }}",
-              "export S3_KEY=${{ vars.S3_KEY }}",
-              "echo Using s3://$S3_BUCKET/$S3_KEY",
+              "sudo awk -F= '$1==\"GEMINI_API_KEY\"{print \"GEMINI_API_KEY len=\"length($2)} $1==\"GOOGLE_CLIENT_ID\"{print \"GOOGLE_CLIENT_ID len=\"length($2)} $1==\"GOOGLE_CLIENT_SECRET\"{print \"GOOGLE_CLIENT_SECRET len=\"length($2)}' /etc/sizz/sizz-api.env",
 
               "echo '>> download artifact from S3'",
-              "aws s3 cp s3://$S3_BUCKET/$S3_KEY /tmp/sizz-api.jar",
-
+              "aws s3 cp s3://${{ vars.S3_BUCKET }}/${{ vars.S3_KEY }} /tmp/sizz-api.jar",
               "sudo mv /tmp/sizz-api.jar /opt/sizz/build/libs/sizz-api-0.0.1-SNAPSHOT.jar",
 
               "echo '>> restart service'",
@@ -116,7 +111,6 @@ jobs:
           done
           echo "Timeout waiting SSM command"; exit 1
 
-      # 서비스 로그 확인
       - name: Tail service logs
         if: always()
         run: |
