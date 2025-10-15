@@ -55,17 +55,26 @@ jobs:
           cat > /tmp/ssm-params.json <<'JSON'
           {
             "commands": [
-              "set -e",
+              "set -euo pipefail",
               "sudo mkdir -p /etc/sizz /opt/sizz/build/libs",
               "which aws || (sudo apt-get update && sudo apt-get install -y awscli jq)",
 
-              "echo '>> write /etc/sizz/sizz-api.env from Parameter Store'",
+              "echo '>> set region/env'",
+              "export AWS_DEFAULT_REGION=${{ env.AWS_REGION }}",
+
+              "echo '>> fetch secrets from SSM'",
               "GEMINI=$(aws ssm get-parameter --name \"/sizz/GEMINI_API_KEY\" --with-decryption --query \"Parameter.Value\" --output text | tr -d '\\n')",
-              "GCID=$(aws ssm get-parameter --name \"/sizz/GOOGLE_CLIENT_ID\" --with-decryption --query \"Parameter.Value\" --output text | tr -d '\\n')",
+              "GCID=$(aws ssm get-parameter --name \"/sizz/GOOGLE_CLIENT_ID\"  --with-decryption --query \"Parameter.Value\" --output text | tr -d '\\n')",
               "GSEC=$(aws ssm get-parameter --name \"/sizz/GOOGLE_CLIENT_SECRET\" --with-decryption --query \"Parameter.Value\" --output text | tr -d '\\n')",
-              "sudo bash -lc 'printf \"GEMINI_API_KEY=%s\nGOOGLE_CLIENT_ID=%s\nGOOGLE_CLIENT_SECRET=%s\n\" \"$GEMINI\" \"$GCID\" \"$GSEC\" > /etc/sizz/sizz-api.env'",
+
+              "[ -n \"$GEMINI\" ] || { echo 'GEMINI_API_KEY is empty'; exit 1; }",
+              "[ -n \"$GCID\" ]   || { echo 'GOOGLE_CLIENT_ID is empty'; exit 1; }",
+              "[ -n \"$GSEC\" ]   || { echo 'GOOGLE_CLIENT_SECRET is empty'; exit 1; }",
+
+              "echo '>> write /etc/sizz/sizz-api.env'",
+              "printf \"GEMINI_API_KEY=%s\\nGOOGLE_CLIENT_ID=%s\\nGOOGLE_CLIENT_SECRET=%s\\n\" \"$GEMINI\" \"$GCID\" \"$GSEC\" | sudo tee /etc/sizz/sizz-api.env >/dev/null",
               "sudo chmod 600 /etc/sizz/sizz-api.env",
-              "sudo awk -F= '$1==\"GEMINI_API_KEY\"{print \"GEMINI_API_KEY len=\"length($2)} $1==\"GOOGLE_CLIENT_ID\"{print \"GOOGLE_CLIENT_ID len=\"length($2)} $1==\"GOOGLE_CLIENT_SECRET\"{print \"GOOGLE_CLIENT_SECRET len=\"length($2)}' /etc/sizz/sizz-api.env",
+              "sudo awk -F= '$1==\"GEMINI_API_KEY\"||$1==\"GOOGLE_CLIENT_ID\"||$1==\"GOOGLE_CLIENT_SECRET\"{print $1\" len=\"length($2)}' /etc/sizz/sizz-api.env",
 
               "echo '>> download artifact from S3'",
               "aws s3 cp s3://${{ vars.S3_BUCKET }}/${{ vars.S3_KEY }} /tmp/sizz-api.jar",
