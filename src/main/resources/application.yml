@@ -1,7 +1,9 @@
 logging:
   level:
+    root: INFO
     org.springframework.security: DEBUG
     org.springframework.security.web.FilterChainProxy: DEBUG
+    sizz.api: DEBUG
 
 server:
   port: 8080

@@ -2,14 +2,18 @@ package sizz.api.global.config;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
+import org.springframework.context.annotation.*;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import sizz.api.search.dto.InsightDto;
+
+import java.time.Duration;
 
 @Configuration
 @RequiredArgsConstructor
@@ -23,22 +27,59 @@ public class RedisConfig {
     private int port;
 
     @Bean
-    public RedisConnectionFactory redisConnectionFactory(){
-        return new LettuceConnectionFactory(host, port);
+    public RedisConnectionFactory redisConnectionFactory() {
+        LettuceClientConfiguration clientCfg = LettuceClientConfiguration.builder()
+                .commandTimeout(Duration.ofSeconds(3))
+                .shutdownTimeout(Duration.ofMillis(300))
+                .build();
+
+        RedisStandaloneConfiguration serverCfg = new RedisStandaloneConfiguration(host, port);
+
+        return new LettuceConnectionFactory(serverCfg, clientCfg);
     }
 
+    /**
+     * 1) 공용 제네릭 템플릿 (Object 저장)
+     *    키: 문자열, 값: Generic JSON (타입정보 포함)
+     */
     @Bean
+    @Primary
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
-        RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
-        redisTemplate.setConnectionFactory(factory);
+        RedisTemplate<String, Object> t = new RedisTemplate<>();
+        t.setConnectionFactory(factory);
 
-        redisTemplate.setKeySerializer(new StringRedisSerializer());
-        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        t.setKeySerializer(new StringRedisSerializer());
+        t.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        t.setHashKeySerializer(new StringRedisSerializer());
+        t.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
 
-        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
-        redisTemplate.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
-
-        return redisTemplate;
+        t.afterPropertiesSet();
+        return t;
     }
 
+    /**
+     * 문자열 전용 템플릿 — 카운터/토큰 등 (INCR/GET에 최적)
+     */
+    @Bean
+    public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory factory) {
+        StringRedisTemplate t = new StringRedisTemplate();
+        t.setConnectionFactory(factory);
+        t.afterPropertiesSet();
+        return t;
+    }
+
+    /**
+     * InsightDto 전용 템플릿 — 캐스팅 제거/타입 안전
+     */
+    @Bean(name = "insightRedisTemplate")
+    public RedisTemplate<String, InsightDto> insightRedisTemplate(RedisConnectionFactory factory) {
+        RedisTemplate<String, InsightDto> t = new RedisTemplate<>();
+        t.setConnectionFactory(factory);
+
+        t.setKeySerializer(new StringRedisSerializer());
+        t.setValueSerializer(new Jackson2JsonRedisSerializer<>(InsightDto.class));
+
+        t.afterPropertiesSet();
+        return t;
+    }
 }
