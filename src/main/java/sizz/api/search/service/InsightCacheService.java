@@ -13,7 +13,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class InsightCacheService {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, InsightDto> redisTemplate;
 
     private String key(String field) {
         return "insight:" + field;
@@ -31,8 +31,8 @@ public class InsightCacheService {
     public Optional<InsightDto> find(String field) {
         String redisKey = key(field);
         try {
-            Object v = redisTemplate.opsForValue().get(redisKey);
-            return Optional.ofNullable((InsightDto) v);
+            InsightDto dto = redisTemplate.opsForValue().get(redisKey);
+            return Optional.ofNullable(dto);
         } catch (Exception e) {
             log.error("[REDIS] Insight 조회 실패: {}", redisKey, e);
             return Optional.empty();
