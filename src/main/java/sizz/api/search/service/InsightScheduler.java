@@ -20,13 +20,17 @@ public class InsightScheduler {
         String[] fields = {"경제", "정치", "사회", "문화", "과학", "세계"};
 
         for (String field : fields) {
-            geminiAPI.generateKeywords(field).ifPresent(resultList -> {
+            log.info("[INSIGHT] {} 키워드 생성 호출", field);
+
+            geminiAPI.generateKeywords(field).ifPresentOrElse(resultList -> {
                 InsightDto dto = new InsightDto(field, resultList);
                 insightCacheService.save(dto);
-
-                log.info("[INSIGHT] {} 인사이트 저장 완료", field);
+                log.info("[INSIGHT] {} 인사이트 저장 완료: {}", field, resultList);
+            }, () -> {
+                log.warn("[INSIGHT] {} 결과 없음 → 저장 생략", field);
             });
         }
+
     }
 
 }
