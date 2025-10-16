@@ -45,7 +45,6 @@ public class GeminiAPI {
     private static final long JITTER_MS       = 300;      // 지터(무작위)
     private static final int  MAX_RETRIES     = 3;
 
-    // JSON 파싱기
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /** 429/5xx 재시도성 예외 */
@@ -58,8 +57,11 @@ public class GeminiAPI {
     }
 
     /** 단건 호출 (실패 시 예외 발생) */
-    private String callOnce(String prompt, int maxTokens) {
-        GeminiRequest req = GeminiRequest.of(prompt, maxTokens);
+    private String callOnce(String prompt, String ctx) {
+        GeminiRequest req =
+                (ctx != null && ctx.startsWith("keywords:"))
+                        ? GeminiRequest.ofKeywords(prompt, maxTokensInsightKeywords)   // 키워드 스키마
+                        : GeminiRequest.ofSummary(prompt, maxTokensSummaryAndInclination); // 요약 스키마
 
         GeminiResponse response = geminiWebClient.post()
                 .uri(b -> b.path("/v1beta/models/" + model + ":generateContent")
@@ -67,31 +69,42 @@ public class GeminiAPI {
                         .build())
                 .bodyValue(req)
                 .retrieve()
-                .onStatus(HttpStatusCode::isError, r -> handleError(r)) // 4xx/5xx 공통 처리
+                .onStatus(HttpStatusCode::isError, r -> handleError(r))
                 .bodyToMono(GeminiResponse.class)
                 .block();
 
-        String raw = Optional.ofNullable(response)
+        log.info("[Gemini] ({}) Raw response: {}", ctx, safeToJson(response));
+
+        var parts = Optional.ofNullable(response)
                 .map(GeminiResponse::getCandidates)
                 .filter(list -> !list.isEmpty())
                 .map(list -> list.get(0))
                 .map(GeminiResponse.Candidate::getContent)
                 .map(GeminiResponse.Content::getParts)
-                .filter(list -> !list.isEmpty())
-                .map(list -> list.get(0))
+                .orElse(null);
+
+        if (parts == null || parts.isEmpty()) {
+            log.warn("[Gemini] ({}) 빈 본문 응답(parts:null or empty)", ctx);
+            return "";
+        }
+
+        String raw = Optional.of(parts)
+                .map(l -> l.get(0))
                 .map(GeminiResponse.Part::getText)
                 .orElse("");
 
-        log.info("[Gemini] Raw response: {}", safeToJson(response));
-        return extractJson(raw == null ? "" : raw.trim());
+        String extracted = extractJson(raw == null ? "" : raw.trim());
+        if (extracted.isBlank()) {
+            log.warn("[Gemini] ({}) extractJson 결과가 빈 문자열", ctx);
+        }
+        return extracted;
     }
 
-    /** 오류 처리: 429는 Retry-After 존중, 5xx는 지수 백오프 권장 */
+    /** 오류 처리 */
     private Mono<? extends Throwable> handleError(ClientResponse r) {
         return r.bodyToMono(String.class).defaultIfEmpty("")
                 .flatMap(body -> {
                     HttpStatusCode code = r.statusCode();
-                    // Retry-After 헤더(초)를 읽어 다음 지연으로 사용
                     long retryAfterMs = r.headers().header(HttpHeaders.RETRY_AFTER).stream()
                             .findFirst()
                             .map(s -> {
@@ -105,7 +118,6 @@ public class GeminiAPI {
                     int series = code.value() / 100;
                     if (code.value() == 429 || series == 5) {
                         long base = retryAfterMs > 0 ? retryAfterMs : BASE_BACKOFF_MS;
-                        // 즉시 재시도가 아니라 상위에서 백오프 후 재시도하도록 RetryableException 던짐
                         return Mono.error(new RetryableException(
                                 "Retryable " + code + " from Gemini", base
                         ));
@@ -115,34 +127,31 @@ public class GeminiAPI {
     }
 
     /** 지수 백오프 + Jitter + Retry-After 기반 재시도 */
-    private Optional<String> callGeminiWithRetry(String prompt, int maxTokens, int maxRetries) {
-        long nextDelay = 0; // 첫 시도는 즉시
+    private Optional<String> callGeminiWithRetry(String prompt, int maxRetries, String ctx) {
+        long nextDelay = 0;
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
             if (nextDelay > 0) {
-                log.info("Gemini 재시도 {}회차 - {}ms 후 재시도", attempt, nextDelay);
+                log.info("[Gemini] ({}) 재시도 {}회차 - {}ms 후 재시도", ctx, attempt, nextDelay);
                 sleepSilently(nextDelay);
             }
             try {
-                String text = callOnce(prompt, maxTokens);
+                String text = callOnce(prompt, ctx);
                 if (text != null && !text.isBlank()) {
                     return Optional.of(text);
                 }
-                // 빈 응답이면 재시도(드물지만 보호)
                 throw new RetryableException("Empty body from Gemini", BASE_BACKOFF_MS);
             } catch (RetryableException re) {
-                // Retry-After를 최우선으로, 없으면 지수 백오프 적용
                 long jitter = ThreadLocalRandom.current().nextLong(0, JITTER_MS + 1);
                 long backoff = (long) Math.min(MAX_BACKOFF_MS,
                         (re.nextDelayMs > 0 ? re.nextDelayMs : (BASE_BACKOFF_MS * Math.pow(2, attempt - 1))))
                         + jitter;
                 nextDelay = backoff;
                 if (attempt == maxRetries) {
-                    log.warn("Gemini 재시도 한도 초과: {}", re.getMessage());
+                    log.warn("[Gemini] ({}) 재시도 한도 초과: {}", ctx, re.getMessage());
                     return Optional.empty();
                 }
             } catch (Exception e) {
-                // 비재시도성 예외
-                log.error("[Gemini] 호출/파싱 실패(비재시도): {}", e.getMessage(), e);
+                log.error("[Gemini] ({}) 호출/파싱 실패(비재시도): {}", ctx, e.getMessage(), e);
                 return Optional.empty();
             }
         }
@@ -158,18 +167,16 @@ public class GeminiAPI {
         if (raw == null) return null;
         String s = raw.replace("```json", "").replace("```", "").trim();
 
-        // 객체 {...} 시도
         int objSt = s.indexOf('{'), objEd = s.lastIndexOf('}');
         if (objSt >= 0 && objEd > objSt) {
             return s.substring(objSt, objEd + 1).trim();
         }
 
-        // 배열 [...] 시도
         int arrSt = s.indexOf('['), arrEd = s.lastIndexOf(']');
         if (arrSt >= 0 && arrEd > arrSt) {
             return s.substring(arrSt, arrEd + 1).trim();
         }
-        return s; //그대로 반환(파서에서 실패하면 Optional.empty)
+        return s;
     }
 
     private String safeToJson(Object o) {
@@ -177,9 +184,13 @@ public class GeminiAPI {
         catch (Exception e) { return String.valueOf(o); }
     }
 
+    private static String sample(String s) {
+        if (s == null) return "null";
+        return s.length() <= 200 ? s : s.substring(0, 200) + "...(+" + (s.length() - 200) + ")";
+    }
+
     // 퍼블릭 API
 
-    /** 뉴스 요약 및 성향 분석 */
     @RateLimiter(name = "geminiApi")
     public Optional<SummaryAndInclination> summarizeAndIncline(String description) {
         String prompt =
@@ -193,11 +204,9 @@ public class GeminiAPI {
                         "출력 예시: {\"summary\":\"...\",\"inclination\":\"중립\"}\n\n" +
                         "뉴스 본문:\n" + description;
 
-        return callGeminiWithRetry(prompt, maxTokensSummaryAndInclination, MAX_RETRIES)
+        return callGeminiWithRetry(prompt, MAX_RETRIES, "summary")
                 .flatMap(this::parseSummaryAndInclination);
     }
-
-    // JSON 파싱
 
     private Optional<SummaryAndInclination> parseSummaryAndInclination(String text) {
         if (text == null || text.isBlank()) return Optional.empty();
@@ -214,7 +223,7 @@ public class GeminiAPI {
             }
             return Optional.of(new SummaryAndInclination(summary, normalized));
         } catch (Exception e) {
-            log.warn("Gemini JSON 파싱 실패: {}", e.getMessage());
+            log.warn("Gemini JSON 파싱 실패(summary): {} / sample={}", e.getMessage(), sample(text));
             return Optional.empty();
         }
     }
@@ -236,22 +245,22 @@ public class GeminiAPI {
                 .trim();
     }
 
-    // 결과 전달용 DTO
     public record SummaryAndInclination(String summary, String inclination) {}
 
     @RateLimiter(name = "geminiApi")
     public Optional<List<String>> generateKeywords(String field) {
         String prompt =
                 "아래 형식의 JSON 배열만 출력하세요. 한국어로.\n" +
-                "- 주제: 최근 주요 " + field + " 분야 이슈 키워드\n" +
-                "- 항목 수: 6~8개\n" +
-                "- 각 항목은 정확히 \"키워드: 설명\" 형식의 문자열 하나\n" +
-                "- 설명은 한 문장, 40~60글자, 불릿/번호/마크다운/코드블럭 금지\n" +
-                "- 예시: [\"금리인하: 기준금리 인하 기대가 금융시장에 파급되고 있다.\", " +
-                "\"환율: 달러 강세로 원화 변동성이 확대되고 있다.\"]\n" +
-                "- JSON 외 어떤 텍스트도 출력 금지";
+                        "- 주제: 최근 주요 " + field + " 분야 이슈 키워드\n" +
+                        "- 항목 수: 6~8개\n" +
+                        "- 각 항목은 정확히 \"키워드: 설명\" 형식의 문자열 하나\n" +
+                        "- 설명은 한 문장, 40~60글자, 불릿/번호/마크다운/코드블럭 금지\n" +
+                        "- 예시: [\"금리인하: 기준금리 인하 기대가 금융시장에 파급되고 있다.\", " +
+                        "\"환율: 달러 강세로 원화 변동성이 확대되고 있다.\"]\n" +
+                        "- JSON 외 어떤 텍스트도 출력 금지";
 
-        return callGeminiWithRetry(prompt, maxTokensInsightKeywords, MAX_RETRIES)
+        String ctx = "keywords:" + field;
+        return callGeminiWithRetry(prompt, MAX_RETRIES, ctx)
                 .flatMap(this::parseKeywords);
     }
 
@@ -260,7 +269,7 @@ public class GeminiAPI {
         try {
             return Optional.of(objectMapper.readValue(text, new TypeReference<List<String>>(){}));
         } catch (Exception e) {
-            log.warn("Gemini 키워드 파싱 실패: {}", e.getMessage());
+            log.warn("Gemini 키워드 파싱 실패: {} / sample={}", e.getMessage(), sample(text));
             return Optional.empty();
         }
     }
