@@ -1,14 +1,15 @@
 package sizz.api.bookmarks.controller;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import sizz.api.bookmarks.dto.BookmarksRequest;
 import sizz.api.bookmarks.dto.BookmarksResponse;
 import sizz.api.bookmarks.service.BookmarksService;
-
-import java.util.List;
+import sizz.api.news.dto.NewsResponseDto;
 
 @RestController
 @RequestMapping("/api/news")
@@ -29,15 +30,14 @@ public class BookmarksController {
         return ResponseEntity.ok(response);
     }
 
-    //뉴스 전체 조회
+    //로그인한 사용자가 북마크한 뉴스 조회
     @GetMapping("/users/me/bookmarks")
-    public ResponseEntity<List<BookmarksResponse>> getBookmarks(
-            @AuthenticationPrincipal String email
+    public ResponseEntity<Slice<NewsResponseDto>> getBookmarkNews(
+            @AuthenticationPrincipal String email,
+            Pageable pageable  // ?page=0&size=20&sort=createdAt,desc
     ) {
         if (email == null) return ResponseEntity.status(401).build();
-
-        List<BookmarksResponse> bookmarks = bookmarkService.getBookmarks(email);
-        return ResponseEntity.ok(bookmarks);
+        return ResponseEntity.ok(bookmarkService.getBookmarkNewsSlice(email, pageable));
     }
 
     //북마크 여부 확인

@@ -2,14 +2,23 @@ package sizz.api.reaction.service;
 
 import com.mongodb.DuplicateKeyException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.SliceImpl;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import sizz.api.news.dto.NewsResponseDto;
+import sizz.api.news.service.NewsQueryService;
 import sizz.api.reaction.dto.ReactionResponse;
 import sizz.api.reaction.dto.ReactionType;
 import sizz.api.reaction.entity.NewsReactionDocument;
 import sizz.api.reaction.repository.NewsReactionRepository;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +26,7 @@ import java.util.Optional;
 public class NewsReactionService {
 
     private final NewsReactionRepository newsReactionRepository;
+    private final NewsQueryService newsQueryService;
 
     public ReactionResponse toggleReaction(String userId, String articleId, ReactionType newReaction) {
         try {
@@ -71,5 +81,44 @@ public class NewsReactionService {
             }
             return ReactionResponse.fromNews(current);
         }
+    }
+
+    public Slice<NewsResponseDto> getMyReactedNewsSlice(String userId, ReactionType type, Pageable pageable) {
+        // 나의 뉴스 반응 슬라이스
+        Slice<NewsReactionDocument> slice = newsReactionRepository.findByUserIdAndReaction(userId, type, pageable);
+
+        List<String> ids = slice.getContent().stream()
+                .map(NewsReactionDocument::getArticleId)
+                .toList();
+
+        if (ids.isEmpty()) {
+            return new SliceImpl<>(List.of(), pageable, slice.hasNext());
+        }
+
+        // 뉴스 배치 조회 (입력 순서 유지)
+        List<NewsResponseDto> newsDtos = newsQueryService.fetchNewsByIds(ids);
+
+        // 입력 ids 순서대로 재정렬 + reactionType 채워서 반환
+        Map<String, NewsResponseDto> byId =
+                newsDtos.stream().collect(Collectors.toMap(NewsResponseDto::getArticleId, n -> n));
+
+        List<NewsResponseDto> enriched = ids.stream()
+                .map(byId::get)
+                .filter(Objects::nonNull)
+                .map(dto -> NewsResponseDto.builder()
+                        .articleId(dto.getArticleId())
+                        .title(dto.getTitle())
+                        .description(dto.getDescription())
+                        .link(dto.getLink())
+                        .category(dto.getCategory())
+                        .pubDate(dto.getPubDate())
+                        .sourceName(dto.getSourceName())
+                        .viewCount(dto.getViewCount())
+                        .inclination(dto.getInclination())
+                        .reactionType(type)
+                        .build())
+                .toList();
+
+        return new SliceImpl<>(enriched, pageable, slice.hasNext());
     }
 }
