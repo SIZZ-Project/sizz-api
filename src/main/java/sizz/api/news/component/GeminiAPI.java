@@ -63,6 +63,13 @@ public class GeminiAPI {
                         ? GeminiRequest.ofKeywords(prompt, maxTokensInsightKeywords)   // 키워드 스키마
                         : GeminiRequest.ofSummary(prompt, maxTokensSummaryAndInclination); // 요약 스키마
 
+        // 요청 바디 로깅
+        try {
+            log.info("[Gemini] ({}) request={}", ctx, objectMapper.writeValueAsString(req));
+        } catch (Exception e) {
+            log.warn("[Gemini] ({}) request 직렬화 실패: {}", ctx, e.getMessage());
+        }
+
         GeminiResponse response = geminiWebClient.post()
                 .uri(b -> b.path("/v1beta/models/" + model + ":generateContent")
                         .queryParam("key", apiKey)

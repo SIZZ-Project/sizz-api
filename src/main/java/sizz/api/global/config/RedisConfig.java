@@ -1,5 +1,8 @@
 package sizz.api.global.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.*;
@@ -9,7 +12,6 @@ import org.springframework.data.redis.connection.lettuce.LettuceClientConfigurat
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.data.redis.core.*;
 import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
-import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 import sizz.api.search.dto.InsightDto;
 
@@ -34,8 +36,14 @@ public class RedisConfig {
                 .build();
 
         RedisStandaloneConfiguration serverCfg = new RedisStandaloneConfiguration(host, port);
-
         return new LettuceConnectionFactory(serverCfg, clientCfg);
+    }
+
+    /** Redis 전용 ObjectMapper (JavaTime 지원) */
+    private ObjectMapper redisObjectMapper() {
+        return new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
     /**
@@ -45,13 +53,16 @@ public class RedisConfig {
     @Bean
     @Primary
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory factory) {
+        ObjectMapper om = redisObjectMapper();
+        GenericJackson2JsonRedisSerializer serializer = new GenericJackson2JsonRedisSerializer(om);
+
         RedisTemplate<String, Object> t = new RedisTemplate<>();
         t.setConnectionFactory(factory);
 
         t.setKeySerializer(new StringRedisSerializer());
-        t.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+        t.setValueSerializer(serializer);
         t.setHashKeySerializer(new StringRedisSerializer());
-        t.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+        t.setHashValueSerializer(serializer);
 
         t.afterPropertiesSet();
         return t;
@@ -69,16 +80,22 @@ public class RedisConfig {
     }
 
     /**
-     * InsightDto 전용 템플릿 — 캐스팅 제거/타입 안전
+     * InsightDto 전용 템플릿 — 타입 안전 + JavaTime 지원
      */
     @Bean(name = "insightRedisTemplate")
     public RedisTemplate<String, InsightDto> insightRedisTemplate(RedisConnectionFactory factory) {
+        ObjectMapper om = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        GenericJackson2JsonRedisSerializer ser = new GenericJackson2JsonRedisSerializer(om);
+
         RedisTemplate<String, InsightDto> t = new RedisTemplate<>();
         t.setConnectionFactory(factory);
-
         t.setKeySerializer(new StringRedisSerializer());
-        t.setValueSerializer(new Jackson2JsonRedisSerializer<>(InsightDto.class));
-
+        t.setValueSerializer(ser);
+        t.setHashKeySerializer(new StringRedisSerializer());
+        t.setHashValueSerializer(ser);
         t.afterPropertiesSet();
         return t;
     }

@@ -1,5 +1,6 @@
 package sizz.api.news.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -13,6 +14,8 @@ import java.util.Map;
 @NoArgsConstructor
 public class GeminiRequest {
     private List<Content> contents;
+
+    @JsonProperty("generation_config")
     private GenerationConfig generationConfig;
 
     /**
@@ -99,9 +102,15 @@ public class GeminiRequest {
     @NoArgsConstructor
     @Builder
     public static class GenerationConfig {
+        @JsonProperty("max_output_tokens")
         private Integer maxOutputTokens;
+
         private Double temperature;
+
+        @JsonProperty("response_mime_type")
         private String responseMimeType;
+
+        @JsonProperty("response_schema")
         private Map<String, Object> responseSchema;
     }
 }
