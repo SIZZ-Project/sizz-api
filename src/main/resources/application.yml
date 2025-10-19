@@ -71,7 +71,7 @@ gemini:
   model: gemini-2.5-flash
   maxOutputTokens:
     summaryAndInclination: 2000
-    insightKeywords: 800
+    insightKeywords: 1536
 
 schedule:
   viewSyncMs: 3600000
