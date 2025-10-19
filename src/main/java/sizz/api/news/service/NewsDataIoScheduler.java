@@ -43,6 +43,11 @@ public class NewsDataIoScheduler {
                 } catch (Exception ge) {
                     log.warn("뉴스 요약 오류 articleId={} msg={}", article.getArticleId(), ge.getMessage());
                 }
+
+                // 다음 기사 요약 전 1초 대기
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ignored) {}
             }
 
             int saved = newsSyncService.syncNews(articles);

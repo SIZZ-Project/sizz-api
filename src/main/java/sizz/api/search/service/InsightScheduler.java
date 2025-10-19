@@ -29,6 +29,11 @@ public class InsightScheduler {
             }, () -> {
                 log.warn("[INSIGHT] {} 결과 없음 → 저장 생략", field);
             });
+
+            // 다음 호출 전 2초 대기
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException ignored) {}
         }
 
     }

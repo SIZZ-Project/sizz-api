@@ -41,7 +41,7 @@ public class GeminiAPI {
     private int maxTokensInsightKeywords;
 
     private static final long BASE_BACKOFF_MS = 800;      // 지수 백오프 시작
-    private static final long MAX_BACKOFF_MS  = 8000;     // 백오프 상한
+    private static final long MAX_BACKOFF_MS  = 15000;    // 백오프 상한
     private static final long JITTER_MS       = 300;      // 지터(무작위)
     private static final int  MAX_RETRIES     = 3;
 
