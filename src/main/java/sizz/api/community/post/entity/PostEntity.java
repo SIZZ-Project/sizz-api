@@ -33,10 +33,12 @@ public class PostEntity extends BaseEntity {
     private String imageUrl;
 
     // 좋아요 수
+    @Builder.Default
     @Column(nullable = false)
     private int likeCount = 0;
 
     // 댓글 수
+    @Builder.Default
     @Column(nullable = false)
     private int commentCount = 0;
 }
