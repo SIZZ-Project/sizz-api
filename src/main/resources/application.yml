@@ -62,6 +62,11 @@ spring:
       host: 127.0.0.1
       port: 6379
 
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
 jwt:
   secret: YmFzZTY0ZW5jb2RlZHNlY3JldGtleXNob3VsZGJlMzI1Ynl0ZXM=
 
@@ -87,3 +92,9 @@ resilience4j:
         limit-for-period: 6
         limit-refresh-period: 60s
         timeout-duration: 60s
+
+app:
+  aws:
+    region: ${AWS_REGION:ap-northeast-2}
+    s3:
+      bucket: ${AWS_S3_BUCKET_NAME}

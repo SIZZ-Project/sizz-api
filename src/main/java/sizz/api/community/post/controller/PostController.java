@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import sizz.api.community.post.dto.PostRequest;
 import sizz.api.community.post.dto.PostResponse;
 import sizz.api.community.post.service.PostService;
@@ -18,26 +19,28 @@ public class PostController {
 
     private final PostService postService;
 
-    //작성
-    @PostMapping
+    // 게시글 작성
+    @PostMapping(consumes = {"multipart/form-data"})
     public ResponseEntity<ApiResponse<PostResponse>> createPost(
             @AuthenticationPrincipal String email,
-            @RequestBody PostRequest request
+            @RequestPart("data") PostRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image
     ) {
         if (email == null) return ResponseEntity.status(401).build();
-        PostResponse response = postService.createPost(email, request);
+        PostResponse response = postService.createPost(email, request, image);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
-    //수정
-    @PutMapping("/{postId}")
+    // 수정
+    @PutMapping(value = "/{postId}", consumes = {"multipart/form-data"})
     public ResponseEntity<ApiResponse<PostResponse>> updatePost(
             @AuthenticationPrincipal String email,
             @PathVariable Long postId,
-            @RequestBody PostRequest request
+            @RequestPart("data") PostRequest request,
+            @RequestPart(value = "image", required = false) MultipartFile image
     ) {
         if (email == null) return ResponseEntity.status(401).build();
-        PostResponse response = postService.updatePost(email, postId, request);
+        PostResponse response = postService.updatePost(email, postId, request, image);
         return ResponseEntity.ok(ApiResponse.success(response));
     }
 
