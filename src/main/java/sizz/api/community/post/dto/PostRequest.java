@@ -8,5 +8,4 @@ import lombok.Setter;
 public class PostRequest {
     private String title;
     private String content;
-    private String imageUrl; // 이미지 첨부 시 사용
 }
