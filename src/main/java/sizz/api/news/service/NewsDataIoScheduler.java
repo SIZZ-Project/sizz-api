@@ -19,6 +19,7 @@ public class NewsDataIoScheduler {
     private final NewsDataIoAPI newsDataIoAPI;
     private final NewsSyncService newsSyncService;
     private final GeminiAPI geminiAPI;
+    private final ArticleCrawlerService articleCrawlerService;
 
     @Scheduled(cron = "0 0 */3 * * ?", zone = "Asia/Seoul")
     public void fetchNews() {
@@ -32,19 +33,46 @@ public class NewsDataIoScheduler {
             }
 
             for (NewsDto article : articles) {
+
                 try {
-                    String description = article.getDescription();
-                    if (description != null && !description.isBlank()) {
-                        geminiAPI.summarizeAndIncline(description).ifPresent(r -> {
-                            article.setDescription(r.summary());
-                            article.setInclination(r.inclination());
-                        });
+                    // 기본 텍스트 : API가 준 description
+                    String textForSummary = article.getDescription();
+
+                    // 뉴스 본문 크롤링
+                    try {
+                        String url = article.getLink();
+
+                        if (url != null && !url.isBlank()) {
+                            String fullContent = articleCrawlerService.fetchArticle(url);
+
+                            if (fullContent != null && !fullContent.isBlank()) {
+                                textForSummary = fullContent;
+                            }
+                        }
+                    } catch (Exception ce) {
+                        log.warn("본문 크롤링 실패 articleId={} msg={}",
+                                article.getArticleId(), ce.getMessage());
                     }
+
+                    // 요약할 텍스트가 없으면 스킵
+                    if (textForSummary == null || textForSummary.isBlank()) {
+                        log.info("요약할 텍스트 없음 articleId={}", article.getArticleId());
+                        continue;
+                    }
+
+                    // Gemini 요약 + 성향 분석
+                    geminiAPI.summarizeAndIncline(textForSummary)
+                            .ifPresent(r -> {
+                                article.setDescription(r.summary());   // 요약으로 덮어쓰기
+                                article.setInclination(r.inclination());
+                            });
+
                 } catch (Exception ge) {
-                    log.warn("뉴스 요약 오류 articleId={} msg={}", article.getArticleId(), ge.getMessage());
+                    log.warn("뉴스 요약 오류 articleId={} msg={}",
+                            article.getArticleId(), ge.getMessage());
                 }
 
-                // 다음 기사 요약 전 1초 대기
+                // 다음 기사 처리 전 1초 대기 (API / 크롤링 보호용)
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException ignored) {}
