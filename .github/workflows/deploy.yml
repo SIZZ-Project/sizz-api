@@ -72,7 +72,7 @@ jobs:
               "[ -n \"$GSEC\" ]   || { echo 'GOOGLE_CLIENT_SECRET is empty'; exit 1; }",
 
               "echo '>> write /etc/sizz/sizz-api.env'",
-              "printf \"GEMINI_API_KEY=%s\\nGOOGLE_CLIENT_ID=%s\\nGOOGLE_CLIENT_SECRET=%s\\n\" \"$GEMINI\" \"$GCID\" \"$GSEC\" | sudo tee /etc/sizz/sizz-api.env >/dev/null",
+              "printf \"GEMINI_API_KEY=%s\\nGOOGLE_CLIENT_ID=%s\\nGOOGLE_CLIENT_SECRET=%s\\nAWS_S3_BUCKET_NAME=${{ vars.S3_BUCKET }}\\n\" \"$GEMINI\" \"$GCID\" \"$GSEC\" | sudo tee /etc/sizz/sizz-api.env >/dev/null",
               "sudo chmod 600 /etc/sizz/sizz-api.env",
               "sudo awk -F= '$1==\"GEMINI_API_KEY\"||$1==\"GOOGLE_CLIENT_ID\"||$1==\"GOOGLE_CLIENT_SECRET\"{print $1\" len=\"length($2)}' /etc/sizz/sizz-api.env",
 
