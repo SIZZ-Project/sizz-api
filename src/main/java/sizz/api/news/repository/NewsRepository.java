@@ -12,5 +12,6 @@ public interface NewsRepository extends MongoRepository<NewsDocument, String> {
     boolean existsByArticleId(String articleId);
     List<NewsDocument> findTop5ByPubDateBetweenOrderByViewCountDescPubDateDescIdDesc(LocalDateTime start, LocalDateTime end);
     List<NewsDocument> findByArticleIdIn(Collection<String> articleIds);
+    List<NewsDocument> findByIdIn(List<String> ids);
 
 }
