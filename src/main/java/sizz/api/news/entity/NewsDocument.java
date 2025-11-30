@@ -1,6 +1,7 @@
 package sizz.api.news.entity;
 
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.CompoundIndexes;
@@ -51,6 +52,10 @@ public class NewsDocument {
     private long viewCount = 0L;
 
     private String inclination;
+
+    @CreatedDate
+    @Indexed
+    private LocalDateTime createdAt;
 
     public static NewsDocument fromDto(NewsDto dto) {
         return NewsDocument.builder()
