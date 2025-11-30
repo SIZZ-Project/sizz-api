@@ -79,7 +79,7 @@ public class NewsQueryService {
         // 3) 로그인 → HOT 기사들에 대한 나의 반응/북마크 배치 조회
         List<String> ids = base.stream().map(NewsResponseDto::getArticleId).toList();
         Map<String, ReactionType> myReactionMap = getMyReactionsMap(userId, ids);
-        Map<String, Boolean>      myBookmarkMap = getMyBookmarksMap(userId, ids); // ✅
+        Map<String, Boolean>      myBookmarkMap = getMyBookmarksMap(userId, ids);
 
         // 4) 캐시 오염 방지: 복사 DTO로 reaction/bookmarked 얹어서 반환
         return base.stream()
@@ -94,7 +94,7 @@ public class NewsQueryService {
                         .viewCount(dto.getViewCount())
                         .inclination(dto.getInclination())
                         .reactionType(myReactionMap.get(dto.getArticleId()))
-                        .bookmarked(Boolean.TRUE.equals(myBookmarkMap.get(dto.getArticleId()))) // ✅
+                        .bookmarked(Boolean.TRUE.equals(myBookmarkMap.get(dto.getArticleId())))
                         .build())
                 .toList();
     }
@@ -104,11 +104,11 @@ public class NewsQueryService {
         LocalDateTime endOfDay = LocalDate.now().atTime(LocalTime.MAX);
 
         List<NewsDocument> hotNews =
-                newsRepository.findTop5ByPubDateBetweenOrderByViewCountDescPubDateDescIdDesc(
+                newsRepository.findTop5ByCreatedAtBetweenOrderByViewCountDescCreatedAtDescIdDesc(
                         startOfDay, endOfDay);
 
         List<NewsResponseDto> result = hotNews.stream()
-                .map(NewsResponseDto::from) // 뉴스만 캐시
+                .map(NewsResponseDto::from)
                 .toList();
 
         redisTemplate.opsForValue().set(HOT_NEWS_CACHE_KEY, result, Duration.ofHours(5));
