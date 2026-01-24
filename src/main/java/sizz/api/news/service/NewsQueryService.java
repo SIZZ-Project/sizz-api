@@ -1,6 +1,7 @@
 package sizz.api.news.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class NewsQueryService {
 
     private final NewsRepository newsRepository;
@@ -64,9 +66,16 @@ public class NewsQueryService {
 
     @SuppressWarnings("unchecked")
     public List<NewsResponseDto> getHotNews(String userId) {
-        // 1) 캐시 조회 (뉴스만)
-        List<NewsResponseDto> base =
-                (List<NewsResponseDto>) redisTemplate.opsForValue().get(HOT_NEWS_CACHE_KEY);
+        List<NewsResponseDto> base;
+        try{
+            // 1) 캐시 조회 (뉴스만)
+             base = (List<NewsResponseDto>) redisTemplate.opsForValue().get(HOT_NEWS_CACHE_KEY);
+        } catch (Exception e) {
+            // Redis 장애 -> DB fallback
+            base = null;
+            log.warn("Redis cache get failed. fallback to DB", e);
+        }
+
         if (base == null) {
             base = refreshHotNewsCache();
         }
@@ -110,8 +119,12 @@ public class NewsQueryService {
         List<NewsResponseDto> result = hotNews.stream()
                 .map(NewsResponseDto::from)
                 .toList();
+        try{
+            redisTemplate.opsForValue().set(HOT_NEWS_CACHE_KEY, result, Duration.ofHours(5));
+        } catch (Exception e) {
+            log.warn("Redis cache set failed. fallback to DB only", e);
+        }
 
-        redisTemplate.opsForValue().set(HOT_NEWS_CACHE_KEY, result, Duration.ofHours(5));
         return result;
     }
 
