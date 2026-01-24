@@ -6,6 +6,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import sizz.api.search.dto.InsightDto;
 
+import java.time.Duration;
 import java.util.Optional;
 
 @Slf4j
@@ -22,7 +23,8 @@ public class InsightCacheService {
     public void save(InsightDto dto) {
         String redisKey = key(dto.getField());
         try {
-            redisTemplate.opsForValue().set(redisKey, dto);
+            // TTL 3일
+            redisTemplate.opsForValue().set(redisKey, dto, Duration.ofDays(3));
         } catch (Exception e) {
             log.error("[REDIS] Insight 저장 실패: {}", redisKey, e);
         }
