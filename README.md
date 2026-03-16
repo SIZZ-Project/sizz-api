@@ -33,7 +33,7 @@ SIZZ는 알고리즘 추천에 의해 한쪽 시각의 뉴스만 소비하게 �
 ## 🛠️ 사용 기술
 
 ### Backend
-- Java 17
+- Java 21
 - Spring Boot
 - Spring Data JPA
 - Spring Data MongoDB
